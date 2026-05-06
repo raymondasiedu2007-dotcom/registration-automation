@@ -16,6 +16,7 @@ from app.models import PROFILE_FIELDS
 
 CALLBACK_MAIN = "main"
 CALLBACK_REGISTER = "register"
+CALLBACK_REGISTER_ALL = "register_all"
 CALLBACK_SITES = "sites"
 CALLBACK_INFO = "info"
 CALLBACK_EDIT = "edit"
@@ -27,7 +28,8 @@ CALLBACK_CANCEL = "cancel"
 
 def main_menu() -> InlineKeyboardMarkup:
     return InlineKeyboardMarkup([
-        [InlineKeyboardButton("Register on Site", callback_data=CALLBACK_REGISTER), InlineKeyboardButton("My Saved Info", callback_data=CALLBACK_INFO)],
+        [InlineKeyboardButton("Register on Site", callback_data=CALLBACK_REGISTER), InlineKeyboardButton("Register on All Sites", callback_data=CALLBACK_REGISTER_ALL)],
+        [InlineKeyboardButton("My Saved Info", callback_data=CALLBACK_INFO)],
         [InlineKeyboardButton("Edit My Info", callback_data=CALLBACK_EDIT), InlineKeyboardButton("Supported Sites", callback_data=CALLBACK_SITES)],
         [InlineKeyboardButton("Analytics", callback_data=CALLBACK_ANALYTICS), InlineKeyboardButton("Settings", callback_data=CALLBACK_SETTINGS)],
         [InlineKeyboardButton("Help", callback_data=CALLBACK_HELP), InlineKeyboardButton("Cancel Current Task", callback_data=CALLBACK_CANCEL)],
@@ -50,9 +52,11 @@ def edit_profile_menu() -> InlineKeyboardMarkup:
     return InlineKeyboardMarkup(rows)
 
 
-def approval_menu() -> InlineKeyboardMarkup:
-    return InlineKeyboardMarkup([[InlineKeyboardButton("Approve final submission", callback_data="approve_submit"), InlineKeyboardButton("Cancel", callback_data=CALLBACK_CANCEL)]])
+def approval_menu(token: str | None = None) -> InlineKeyboardMarkup:
+    callback = f"approve_submit:{token}" if token else "approve_submit"
+    return InlineKeyboardMarkup([[InlineKeyboardButton("Approve final submission", callback_data=callback), InlineKeyboardButton("Cancel", callback_data=CALLBACK_CANCEL)]])
 
 
-def continue_menu() -> InlineKeyboardMarkup:
-    return InlineKeyboardMarkup([[InlineKeyboardButton("Continue", callback_data="manual_continue"), InlineKeyboardButton("Cancel", callback_data=CALLBACK_CANCEL)]])
+def continue_menu(token: str | None = None) -> InlineKeyboardMarkup:
+    callback = f"manual_continue:{token}" if token else "manual_continue"
+    return InlineKeyboardMarkup([[InlineKeyboardButton("Continue", callback_data=callback), InlineKeyboardButton("Cancel", callback_data=CALLBACK_CANCEL)]])

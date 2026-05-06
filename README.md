@@ -10,9 +10,9 @@ This project is intentionally limited:
 - The runner validates every target URL against the configured domain allowlist.
 - It does **not** bypass CAPTCHA, anti-bot systems, email verification, phone verification, rate limits, or access controls.
 - If CAPTCHA or verification is detected, automation pauses and asks the Telegram user to complete it manually in the browser.
-- It supports one authorized registration at a time and must not be used to create spam or bulk accounts.
-- Requests to run concurrent registration workers (for example, 10 workers across 40 sites) are intentionally unsupported because they constitute bulk account creation.
-- Final Submit/Register is never clicked until the Telegram user approves the final screenshot.
+- It can register one authorized user across multiple distinct configured sites, capped at 10 concurrent headless workers and 40 unique sites per batch.
+- It rejects duplicate site registrations in the same task and must not be used to create spam accounts.
+- Final Submit/Register is never clicked until the Telegram user approves the final screenshot for each site.
 - Playwright runs in headless mode for safety and deployment consistency.
 
 ## Project structure
@@ -115,6 +115,7 @@ Allowed profile fields are:
 The main menu uses inline keyboards:
 
 - **Register on Site**: choose a configured site, confirm required profile info, run Playwright, pause for manual verification if needed, approve final submission.
+- **Register on All Sites**: registers the same user across enabled, not-yet-successful configured sites, using up to 10 concurrent headless workers and stopping after 40 unique sites. Each site still pauses for CAPTCHA/manual verification and requires final approval before submit.
 - **My Saved Info**: displays stored profile fields with sensitive values masked.
 - **Edit My Info**: edit first name, last name, address lines, state/region, city, ZIP/postal code, phone number, and email individually.
 - **Supported Sites**: lists configured sites with domain, registration URL, and enabled/disabled status.
@@ -137,7 +138,7 @@ Before any submit/register click, the bot sends a screenshot with:
 
 > Approve final submission?
 
-The submit button is clicked only after **Approve final submission** is pressed. Cancelling stops the workflow before submission.
+The submit button is clicked only after **Approve final submission** is pressed for that site. In a multi-site batch, each site sends its own screenshot and approval button. Cancelling resolves pending approvals as rejected and stops submissions that have not already been approved.
 
 ## Optional Kimi/Qwen AI mapping
 

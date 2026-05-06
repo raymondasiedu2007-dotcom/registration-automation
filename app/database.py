@@ -99,6 +99,15 @@ class Database:
                 (row["site_key"], 1 if status == AttemptStatus.SUCCESS else 0, 1 if status == AttemptStatus.FAILED else 0, manual_interventions, duration, completed_at),
             )
 
+
+    async def successful_site_keys_for_user(self, telegram_user_id: int) -> set[str]:
+        with self._connect() as db:
+            rows = db.execute(
+                "SELECT DISTINCT site_key FROM registration_attempts WHERE telegram_user_id=? AND status=?",
+                (telegram_user_id, AttemptStatus.SUCCESS.value),
+            ).fetchall()
+        return {str(row["site_key"]) for row in rows}
+
     async def log_error(self, telegram_user_id: int | None, site_key: str | None, category: str, message: str, details: dict | None = None, screenshot_path: str | None = None) -> None:
         with self._connect() as db:
             db.execute(

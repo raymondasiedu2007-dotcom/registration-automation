@@ -83,6 +83,7 @@ def test_analytics_calculations(tmp_path: Path):
         await db.finish_attempt(one, AttemptStatus.SUCCESS, manual_interventions=1)
         two = await db.start_attempt(1, "demo")
         await db.finish_attempt(two, AttemptStatus.FAILED, failure_reason="captcha", failure_category="manual", manual_interventions=2)
+        assert await db.successful_site_keys_for_user(1) == {"demo"}
         summary = await AnalyticsService(str(db_path)).summary()
         assert summary["total_registration_attempts"] == 2
         assert summary["successful_registrations"] == 1
@@ -97,4 +98,4 @@ def test_analytics_calculations(tmp_path: Path):
 def test_menu_routing_contains_required_callbacks():
     markup = main_menu()
     callbacks = {button.callback_data for row in markup.inline_keyboard for button in row}
-    assert {"register", "info", "edit", "sites", "analytics", "settings", "help", "cancel"}.issubset(callbacks)
+    assert {"register", "register_all", "info", "edit", "sites", "analytics", "settings", "help", "cancel"}.issubset(callbacks)

@@ -3,7 +3,8 @@ from pathlib import Path
 import pytest
 
 from app.config import ConfigError, load_config
-from app.safety import SafetyError, is_domain_allowed, validate_allowed_url, validate_registration_batch
+from app.models import SiteConfig
+from app.safety import MAX_CONCURRENT_REGISTRATIONS, SafetyError, is_domain_allowed, validate_allowed_url, validate_registration_batch
 
 
 def test_config_loading_parses_sites(tmp_path: Path):
@@ -65,11 +66,19 @@ sites:
     assert config.playwright_headless is True
 
 
-def test_bulk_registration_batch_is_rejected():
+def test_multi_site_registration_batch_allows_ten_concurrent_unique_sites():
+    sites = [
+        SiteConfig(key=f"site_{index}", name=f"Site {index}", domain=f"example{index}.com", registration_url=f"https://example{index}.com/register")
+        for index in range(10)
+    ]
+    validate_registration_batch(sites, requested_concurrency=MAX_CONCURRENT_REGISTRATIONS)
+
+
+def test_registration_batch_rejects_duplicate_sites_and_too_much_concurrency():
     config = load_config(Path("config.example.yaml"))
     site = config.sites["example_site"]
     with pytest.raises(SafetyError):
-        validate_registration_batch([site], requested_concurrency=10)
+        validate_registration_batch([site], requested_concurrency=11)
     with pytest.raises(SafetyError):
         validate_registration_batch([site, site], requested_concurrency=1)
     validate_registration_batch([site], requested_concurrency=1)

@@ -6,7 +6,7 @@ from urllib.parse import urlparse
 from app.models import SiteConfig
 
 
-MAX_AUTHORIZED_SITES_PER_TASK = 1
+MAX_CONCURRENT_REGISTRATIONS = 10
 MAX_CONFIGURED_UNIQUE_SITES = 40
 
 
@@ -33,22 +33,22 @@ def validate_allowed_url(url: str, site: SiteConfig) -> None:
 
 
 def ensure_not_bulk(count: int) -> None:
-    if count > MAX_AUTHORIZED_SITES_PER_TASK:
-        raise SafetyError("Bulk account creation is not supported; run one authorized registration at a time.")
+    if count > MAX_CONFIGURED_UNIQUE_SITES:
+        raise SafetyError(f"At most {MAX_CONFIGURED_UNIQUE_SITES} unique configured sites may be registered in one task.")
 
 
 def validate_registration_batch(sites: Sequence[SiteConfig], requested_concurrency: int = 1) -> None:
-    """Reject bulk/concurrent account-registration batches.
+    """Validate a same-user, unique-site registration batch.
 
-    The project is an assisted single-site registration helper. Running 10 concurrent
-    registrations across many sites would be bulk account creation, so this guard
-    makes that unsupported behavior explicit.
+    A batch may register one authorized user on multiple distinct configured sites,
+    with up to 10 concurrent workers and up to 40 unique sites in a task. Duplicate
+    site registrations and higher concurrency are rejected to avoid spam/bulk abuse.
     """
-    if requested_concurrency != 1:
-        raise SafetyError("Concurrent registration workers are not supported; use one authorized registration at a time.")
+    if requested_concurrency < 1:
+        raise SafetyError("Registration concurrency must be at least 1.")
+    if requested_concurrency > MAX_CONCURRENT_REGISTRATIONS:
+        raise SafetyError(f"At most {MAX_CONCURRENT_REGISTRATIONS} concurrent registration workers are supported.")
     site_keys = [site.key for site in sites]
     if len(site_keys) != len(set(site_keys)):
         raise SafetyError("Duplicate site registrations in one task are not supported.")
-    if len(site_keys) > MAX_CONFIGURED_UNIQUE_SITES:
-        raise SafetyError(f"At most {MAX_CONFIGURED_UNIQUE_SITES} unique configured sites may be listed.")
     ensure_not_bulk(len(site_keys))
