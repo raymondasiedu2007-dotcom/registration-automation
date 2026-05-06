@@ -1,0 +1,35 @@
+telegram:
+  bot_token: "${TELEGRAM_BOT_TOKEN}"
+database:
+  path: "registration_bot.sqlite3"
+screenshots_dir: "screenshots"
+playwright:
+  headless: false
+ai:
+  enabled: false
+  provider: "kimi" # or qwen
+  base_url: "https://api.moonshot.ai/v1" # example OpenAI-compatible endpoint
+  api_key: "${AI_API_KEY}"
+  model: "kimi-k2"
+  confidence_threshold: 0.8
+sites:
+  example_site:
+    name: "Example Authorized Site"
+    domain: "example.com"
+    registration_url: "https://example.com/register"
+    enabled: true
+    required_profile_fields:
+      - first_name
+      - last_name
+      - address_line1
+      - address_line2
+      - state_region
+      - city
+      - postal_code
+      - phone_number
+      - email
+    submit_selector: "button[type='submit']"
+    field_mappings:
+      "#firstName": "first_name"
+      "#lastName": "last_name"
+      "#email": "email"
