@@ -31,7 +31,7 @@ KEYWORD_MAP = {
 
 
 class PlaywrightRegistrationRunner:
-    def __init__(self, screenshots_dir: str = "screenshots", headless: bool = False, ai_mapper: AIFormMapper | None = None) -> None:
+    def __init__(self, screenshots_dir: str = "screenshots", headless: bool = True, ai_mapper: AIFormMapper | None = None) -> None:
         self.screenshots_dir = Path(screenshots_dir)
         self.headless = headless
         self.ai_mapper = ai_mapper

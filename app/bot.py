@@ -15,6 +15,7 @@ from app.database import Database
 from app.menu import approval_menu, continue_menu, edit_profile_menu, main_menu, sites_menu
 from app.models import AttemptStatus, PROFILE_FIELDS, UserProfile
 from app.playwright_runner import PlaywrightRegistrationRunner
+from app.safety import validate_registration_batch
 
 FIELD_LABELS = {
     "first_name": "First name", "last_name": "Last name", "address_line1": "Address line 1", "address_line2": "Address line 2",
@@ -90,6 +91,7 @@ async def begin_registration(query, context: ContextTypes.DEFAULT_TYPE, site_key
     config: AppConfig = context.application.bot_data["config"]
     db: Database = context.application.bot_data["db"]
     site = config.require_site(site_key)
+    validate_registration_batch([site], requested_concurrency=1)
     profile = await db.get_profile(query.from_user.id)
     missing = [field for field in site.required_profile_fields if not getattr(profile, field, "").strip()]
     if missing:
@@ -162,7 +164,7 @@ def build_application(config_path: str = "config.yaml") -> Application:
     app = Application.builder().token(token).build()
     db = Database(config.database_path)
     ai_mapper = AIFormMapper(config.ai)
-    runner = PlaywrightRegistrationRunner(config.screenshots_dir, headless=bool(config.raw.get("playwright", {}).get("headless", False)), ai_mapper=ai_mapper)
+    runner = PlaywrightRegistrationRunner(config.screenshots_dir, headless=config.playwright_headless, ai_mapper=ai_mapper)
     app.bot_data.update({"config": config, "db": db, "analytics": AnalyticsService(config.database_path), "runner": runner})
     app.add_handler(CommandHandler("start", start))
     app.add_handler(CallbackQueryHandler(on_menu))

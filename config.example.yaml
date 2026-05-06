@@ -4,7 +4,8 @@ database:
   path: "registration_bot.sqlite3"
 screenshots_dir: "screenshots"
 playwright:
-  headless: false
+  # Always runs headless for safety and deployment consistency.
+  headless: true
 ai:
   enabled: false
   provider: "kimi" # or qwen

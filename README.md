@@ -11,7 +11,9 @@ This project is intentionally limited:
 - It does **not** bypass CAPTCHA, anti-bot systems, email verification, phone verification, rate limits, or access controls.
 - If CAPTCHA or verification is detected, automation pauses and asks the Telegram user to complete it manually in the browser.
 - It supports one authorized registration at a time and must not be used to create spam or bulk accounts.
+- Requests to run concurrent registration workers (for example, 10 workers across 40 sites) are intentionally unsupported because they constitute bulk account creation.
 - Final Submit/Register is never clicked until the Telegram user approves the final screenshot.
+- Playwright runs in headless mode for safety and deployment consistency.
 
 ## Project structure
 
@@ -60,7 +62,7 @@ README.md
 
 4. Edit `.env` and `config.yaml` for your Telegram bot token and authorized sites.
 
-5. Start the bot:
+5. Start the bot. Playwright automation is launched in headless mode:
 
    ```bash
    python -m app.bot

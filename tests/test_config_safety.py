@@ -3,7 +3,7 @@ from pathlib import Path
 import pytest
 
 from app.config import ConfigError, load_config
-from app.safety import SafetyError, is_domain_allowed, validate_allowed_url
+from app.safety import SafetyError, is_domain_allowed, validate_allowed_url, validate_registration_batch
 
 
 def test_config_loading_parses_sites(tmp_path: Path):
@@ -45,3 +45,31 @@ def test_domain_allowlist_validation():
     assert is_domain_allowed("https://accounts.example.com/register", site)
     with pytest.raises(SafetyError):
         validate_allowed_url("https://not-example.com/register", site)
+
+
+def test_playwright_config_is_forced_headless(tmp_path: Path):
+    config_file = tmp_path / "config.yaml"
+    config_file.write_text(
+        """
+playwright:
+  headless: false
+sites:
+  demo:
+    name: Demo
+    domain: example.com
+    registration_url: https://example.com/register
+""",
+        encoding="utf-8",
+    )
+    config = load_config(config_file)
+    assert config.playwright_headless is True
+
+
+def test_bulk_registration_batch_is_rejected():
+    config = load_config(Path("config.example.yaml"))
+    site = config.sites["example_site"]
+    with pytest.raises(SafetyError):
+        validate_registration_batch([site], requested_concurrency=10)
+    with pytest.raises(SafetyError):
+        validate_registration_batch([site, site], requested_concurrency=1)
+    validate_registration_batch([site], requested_concurrency=1)

@@ -21,6 +21,9 @@ class AppConfig:
         self.telegram_token = os.getenv("TELEGRAM_BOT_TOKEN") or raw.get("telegram", {}).get("bot_token", "")
         self.database_path = raw.get("database", {}).get("path", "registration_bot.sqlite3")
         self.screenshots_dir = raw.get("screenshots_dir", "screenshots")
+        # Safety default: registration automation runs headless. This is intentionally
+        # not configurable to a visible browser mode from YAML.
+        self.playwright_headless = True
         self.ai = raw.get("ai", {})
         self.sites = _parse_sites(raw.get("sites", {}))
 
