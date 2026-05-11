@@ -1,13 +1,16 @@
 from __future__ import annotations
 
 import asyncio
+import fcntl
 import json
+import logging
 import os
 import tempfile
 from pathlib import Path
 
 from dotenv import load_dotenv
 from telegram import Update
+from telegram.error import Conflict
 from telegram.ext import Application, CallbackQueryHandler, CommandHandler, ContextTypes, MessageHandler, filters
 
 from app.ai_mapper import AIFormMapper
@@ -37,6 +40,58 @@ def field_label(field: str) -> str:
 PROFILE_EDIT_QUEUE_KEY = "profile_edit_queue"
 EDITING_FIELD_KEY = "editing_field"
 SITES_UPLOAD_KEY = "awaiting_sites_upload"
+LOGGER = logging.getLogger(__name__)
+DEFAULT_LOCK_FILE = "/tmp/registration-automation-bot.lock"
+
+
+class BotInstanceLock:
+    """Non-blocking process lock that keeps duplicate local pollers from starting."""
+
+    def __init__(self, path: str | Path) -> None:
+        self.path = Path(path)
+        self._handle = None
+
+    def __enter__(self) -> "BotInstanceLock":
+        self.path.parent.mkdir(parents=True, exist_ok=True)
+        self._handle = self.path.open("w", encoding="utf-8")
+        try:
+            fcntl.flock(self._handle.fileno(), fcntl.LOCK_EX | fcntl.LOCK_NB)
+        except BlockingIOError as exc:
+            self._handle.close()
+            self._handle = None
+            raise RuntimeError(
+                f"Another local bot process is already running (lock file: {self.path}). "
+                "Stop the existing process before starting a new polling instance."
+            ) from exc
+        self._handle.seek(0)
+        self._handle.truncate()
+        self._handle.write(str(os.getpid()))
+        self._handle.flush()
+        return self
+
+    def __exit__(self, exc_type, exc, tb) -> None:
+        if self._handle is None:
+            return
+        fcntl.flock(self._handle.fileno(), fcntl.LOCK_UN)
+        self._handle.close()
+        self._handle = None
+
+
+async def on_bot_error(update: object, context: ContextTypes.DEFAULT_TYPE) -> None:
+    error = context.error
+    if isinstance(error, Conflict):
+        LOGGER.error(
+            "Telegram polling conflict: another process is calling getUpdates for this bot token. "
+            "Stop the other bot process, systemd service, container, or host using the same token "
+            "before restarting this one."
+        )
+        context.application.stop_running()
+        return
+
+    LOGGER.error(
+        "Unhandled Telegram bot error",
+        exc_info=(type(error), error, error.__traceback__) if error else None,
+    )
 
 
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
@@ -420,6 +475,7 @@ def build_application(config_path: str = "config.yaml") -> Application:
     app.add_handler(CommandHandler("skip", on_skip_optional))
     app.add_handler(MessageHandler(filters.Document.ALL, on_document))
     app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, on_text))
+    app.add_error_handler(on_bot_error)
     return app
 
 
@@ -428,9 +484,11 @@ async def post_init(application: Application) -> None:
 
 
 def main() -> None:
-    app = build_application(os.getenv("CONFIG_PATH", "config.yaml"))
-    app.post_init = post_init
-    app.run_polling()
+    lock_path = os.getenv("BOT_LOCK_FILE", DEFAULT_LOCK_FILE)
+    with BotInstanceLock(lock_path):
+        app = build_application(os.getenv("CONFIG_PATH", "config.yaml"))
+        app.post_init = post_init
+        app.run_polling()
 
 
 if __name__ == "__main__":
