@@ -188,3 +188,9 @@ def test_proxy_response_parsing_accepts_text_and_json_formats():
         "username": "u",
         "password": "p",
     }
+    assert parse_proxy_response('{"error":false,"data":["proxy.example:9000"]}', "application/json", "data.0") == {
+        "server": "http://proxy.example:9000"
+    }
+    assert parse_proxy_response('{"error":false,"data":["proxy.example:1080"]}', "application/json", "data", "socks5") == {
+        "server": "socks5://proxy.example:1080"
+    }

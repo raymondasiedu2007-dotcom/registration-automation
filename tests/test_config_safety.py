@@ -178,3 +178,33 @@ sites:
     assert config.proxy_rotation.api_key_prefix == ""
     assert config.proxy_rotation.proxy_json_path == "data.proxy"
     assert config.proxy_rotation.timeout_seconds == 5
+
+
+def test_9proxy_rotation_config_defaults_to_api_endpoint_and_params(tmp_path: Path, monkeypatch: pytest.MonkeyPatch):
+    monkeypatch.setenv("PROXY_API_KEY", "nineproxy-token")
+    config_file = tmp_path / "config.yaml"
+    config_file.write_text(
+        """
+proxy_rotation:
+  enabled: true
+  provider: 9proxy
+  request_params:
+    country: US
+    plan: premium
+    today: true
+sites:
+  demo:
+    name: Demo
+    domain: example.com
+    registration_url: https://example.com/register
+""",
+        encoding="utf-8",
+    )
+    config = load_config(config_file)
+    assert config.proxy_rotation.provider == "9proxy"
+    assert config.proxy_rotation.api_url == "https://api.9proxy.com/api/proxy"
+    assert config.proxy_rotation.api_key == "nineproxy-token"
+    assert config.proxy_rotation.api_key_header == "api-key"
+    assert config.proxy_rotation.api_key_prefix == ""
+    assert config.proxy_rotation.proxy_json_path == "data.0"
+    assert config.proxy_rotation.request_params == {"country": "US", "plan": "premium", "today": "true"}

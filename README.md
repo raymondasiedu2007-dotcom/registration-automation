@@ -128,6 +128,25 @@ Allowed profile fields are:
 - `country`
 - `password` (or password-generation preference; optional by default)
 
+## Proxy rotation and 9Proxy API
+
+Proxy rotation is disabled by default. When enabled, the runner fetches one authorized proxy per Playwright browser launch and passes it to Playwright; it still pauses for CAPTCHA/manual verification and still requires final Telegram approval before submission.
+
+Generic provider APIs can return plain-text proxy URLs, `{"proxy":"http://user:pass@host:port"}`, or `{"server":"http://host:port","username":"user","password":"pass"}`. To use 9Proxy's API, set `provider: "9proxy"`; the integration defaults to `https://api.9proxy.com/api/proxy`, sends `num=1&t=2`, uses the `api-key` header with no prefix, and reads the first proxy from `data[0]`. You can pass 9Proxy filters through `request_params`, for example:
+
+```yaml
+proxy_rotation:
+  enabled: true
+  provider: "9proxy"
+  api_key: "${PROXY_API_KEY}"
+  request_params:
+    country: US
+    plan: premium
+    today: true
+```
+
+If your 9Proxy account or environment requires a different API host or proxy protocol, override `api_url` or `proxy_scheme` in `config.yaml`.
+
 ## Telegram menu
 
 The main menu uses inline keyboards and supports text/document upload for website lists:
