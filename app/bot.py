@@ -22,6 +22,9 @@ FIELD_LABELS = {
     "state_region": "State/Region", "city": "City", "postal_code": "ZIP/postal code", "phone_number": "Phone number", "email": "Email address",
 }
 
+PROFILE_EDIT_QUEUE_KEY = "profile_edit_queue"
+EDITING_FIELD_KEY = "editing_field"
+
 
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     await update.effective_message.reply_text("Welcome. Use this bot only for authorized registrations on configured sites.", reply_markup=main_menu())
@@ -48,14 +51,15 @@ async def on_menu(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
         profile = await db.get_profile(user_id)
         await query.edit_message_text(format_profile(profile), reply_markup=main_menu())
     elif data == "edit":
-        await query.edit_message_text("Choose a field to edit:", reply_markup=edit_profile_menu())
+        await start_profile_edit_sequence(query, context)
     elif data.startswith("edit:"):
         field = data.split(":", 1)[1]
         if field not in PROFILE_FIELDS:
             await query.edit_message_text("Unknown field.", reply_markup=main_menu())
             return
-        context.user_data["editing_field"] = field
-        await query.edit_message_text(f"Send the new value for {FIELD_LABELS[field]}.")
+        context.user_data[PROFILE_EDIT_QUEUE_KEY] = remaining_profile_fields_after(field)
+        context.user_data[EDITING_FIELD_KEY] = field
+        await query.edit_message_text(profile_field_prompt(field))
     elif data == "sites":
         await query.edit_message_text(format_sites(config.sites), reply_markup=main_menu())
     elif data == "analytics":
@@ -79,7 +83,7 @@ async def on_menu(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
 
 
 async def on_text(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
-    field = context.user_data.pop("editing_field", None)
+    field = context.user_data.get(EDITING_FIELD_KEY)
     if not field:
         await update.message.reply_text("Use the menu to choose an action.", reply_markup=main_menu())
         return
@@ -87,7 +91,45 @@ async def on_text(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     profile = await db.get_profile(update.effective_user.id)
     setattr(profile, field, update.message.text.strip())
     await db.upsert_profile(profile)
-    await update.message.reply_text(f"Updated {FIELD_LABELS[field]}.", reply_markup=main_menu())
+
+    next_field = next_profile_edit_field(context)
+    if next_field:
+        await update.message.reply_text(f"Updated {FIELD_LABELS[field]}.\n\n{profile_field_prompt(next_field)}")
+        return
+
+    await update.message.reply_text(f"Updated {FIELD_LABELS[field]}. All profile fields are complete.", reply_markup=main_menu())
+
+
+async def start_profile_edit_sequence(query, context: ContextTypes.DEFAULT_TYPE) -> None:
+    context.user_data[PROFILE_EDIT_QUEUE_KEY] = list(PROFILE_FIELDS[1:])
+    context.user_data[EDITING_FIELD_KEY] = PROFILE_FIELDS[0]
+    await query.edit_message_text("Let's update your saved info one field at a time.\n\n" + profile_field_prompt(PROFILE_FIELDS[0]))
+
+
+def remaining_profile_fields_after(field: str) -> list[str]:
+    try:
+        start_index = PROFILE_FIELDS.index(field) + 1
+    except ValueError:
+        return []
+    return list(PROFILE_FIELDS[start_index:])
+
+
+def next_profile_edit_field(context: ContextTypes.DEFAULT_TYPE) -> str | None:
+    queue = context.user_data.get(PROFILE_EDIT_QUEUE_KEY) or []
+    if not queue:
+        context.user_data.pop(EDITING_FIELD_KEY, None)
+        context.user_data.pop(PROFILE_EDIT_QUEUE_KEY, None)
+        return None
+    next_field = queue.pop(0)
+    context.user_data[EDITING_FIELD_KEY] = next_field
+    context.user_data[PROFILE_EDIT_QUEUE_KEY] = queue
+    return next_field
+
+
+def profile_field_prompt(field: str) -> str:
+    step_number = PROFILE_FIELDS.index(field) + 1
+    total_steps = len(PROFILE_FIELDS)
+    return f"Send {FIELD_LABELS[field]} ({step_number}/{total_steps})."
 
 
 async def begin_registration(query, context: ContextTypes.DEFAULT_TYPE, site_key: str) -> None:

@@ -99,3 +99,33 @@ def test_menu_routing_contains_required_callbacks():
     markup = main_menu()
     callbacks = {button.callback_data for row in markup.inline_keyboard for button in row}
     assert {"register", "register_all", "info", "edit", "sites", "analytics", "settings", "help", "cancel"}.issubset(callbacks)
+
+
+def test_profile_edit_sequence_advances_through_fields():
+    from types import SimpleNamespace
+
+    from app.bot import (
+        EDITING_FIELD_KEY,
+        PROFILE_EDIT_QUEUE_KEY,
+        next_profile_edit_field,
+        remaining_profile_fields_after,
+    )
+    from app.models import PROFILE_FIELDS
+
+    context = SimpleNamespace(
+        user_data={
+            PROFILE_EDIT_QUEUE_KEY: remaining_profile_fields_after("first_name"),
+            EDITING_FIELD_KEY: "first_name",
+        }
+    )
+
+    assert next_profile_edit_field(context) == "last_name"
+    assert context.user_data[EDITING_FIELD_KEY] == "last_name"
+    assert context.user_data[PROFILE_EDIT_QUEUE_KEY][0] == "address_line1"
+
+    while next_profile_edit_field(context):
+        pass
+
+    assert EDITING_FIELD_KEY not in context.user_data
+    assert PROFILE_EDIT_QUEUE_KEY not in context.user_data
+    assert remaining_profile_fields_after(PROFILE_FIELDS[-1]) == []
