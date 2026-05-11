@@ -156,3 +156,87 @@ def test_proxy_response_parsing_accepts_text_and_json_formats():
         "username": "u",
         "password": "p",
     }
+
+
+def test_uploaded_site_lists_are_scoped_per_telegram_user():
+    from types import SimpleNamespace
+
+    from app.bot import (
+        USER_SITE_UPLOADS_KEY,
+        enabled_sites_for_user,
+        require_site_for_user,
+        sites_for_user,
+    )
+    from app.config import AppConfig, ConfigError
+    from app.models import SiteConfig
+
+    config = AppConfig({
+        "sites": {
+            "global": {
+                "name": "Global Site",
+                "domain": "global.example",
+                "registration_url": "https://global.example/register",
+            }
+        }
+    })
+    user_site = SiteConfig(
+        key="personal",
+        name="Personal Site",
+        domain="personal.example",
+        registration_url="https://personal.example/register",
+    )
+    context = SimpleNamespace(application=SimpleNamespace(bot_data={"config": config, USER_SITE_UPLOADS_KEY: {42: {"personal": user_site}}}))
+
+    assert list(sites_for_user(context, 42)) == ["personal"]
+    assert list(enabled_sites_for_user(context, 42)) == ["personal"]
+    assert require_site_for_user(context, 42, "personal") is user_site
+    assert list(sites_for_user(context, 99)) == ["global"]
+    assert list(config.sites) == ["global"]
+
+    with pytest.raises(ConfigError):
+        require_site_for_user(context, 99, "personal")
+
+
+def test_apply_sites_upload_does_not_replace_global_config_sites():
+    import asyncio
+    from types import SimpleNamespace
+
+    from app.bot import SITES_UPLOAD_KEY, USER_SITE_UPLOADS_KEY, apply_sites_upload, sites_for_user
+    from app.config import AppConfig
+
+    class FakeMessage:
+        def __init__(self):
+            self.replies = []
+
+        async def reply_text(self, text, reply_markup=None):
+            self.replies.append(text)
+
+    async def run():
+        config = AppConfig({
+            "sites": {
+                "global": {
+                    "name": "Global Site",
+                    "domain": "global.example",
+                    "registration_url": "https://global.example/register",
+                }
+            }
+        })
+        context = SimpleNamespace(application=SimpleNamespace(bot_data={"config": config}), user_data={SITES_UPLOAD_KEY: True})
+        update = SimpleNamespace(effective_user=SimpleNamespace(id=42), message=FakeMessage())
+
+        await apply_sites_upload(update, context, """
+sites:
+  personal:
+    name: Personal Site
+    domain: personal.example
+    registration_url: https://personal.example/register
+""")
+
+        assert list(config.sites) == ["global"]
+        assert list(context.application.bot_data[USER_SITE_UPLOADS_KEY]) == [42]
+        assert list(sites_for_user(context, 42)) == ["personal"]
+        assert list(sites_for_user(context, 99)) == ["global"]
+        assert SITES_UPLOAD_KEY not in context.user_data
+        assert "for your account" in update.message.replies[-1]
+
+    asyncio.run(run())
