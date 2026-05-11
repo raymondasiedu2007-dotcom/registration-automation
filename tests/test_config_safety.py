@@ -2,7 +2,7 @@ from pathlib import Path
 
 import pytest
 
-from app.config import ConfigError, load_config
+from app.config import ConfigError, load_config, parse_sites_config_text
 from app.models import SiteConfig
 from app.safety import MAX_CONCURRENT_REGISTRATIONS, SafetyError, is_domain_allowed, validate_allowed_url, validate_registration_batch
 
@@ -23,6 +23,50 @@ sites:
     config = load_config(config_file)
     assert config.sites["demo"].domain == "example.com"
     assert config.enabled_sites["demo"].registration_url == "https://example.com/register"
+    assert "address_line2" not in config.sites["demo"].required_profile_fields
+    assert "phone_number" not in config.sites["demo"].required_profile_fields
+    assert "password" not in config.sites["demo"].required_profile_fields
+
+
+def test_uploaded_sites_yaml_accepts_signup_url_and_profile_to_selector_mappings():
+    sites = parse_sites_config_text(
+        """
+sites:
+  - name: Example Site
+    signup_url: https://example.com/signup
+    notes: Allowed by terms
+    status: active
+    field_mappings:
+      first_name: input[name='first_name']
+      last_name: input[name='last_name']
+      email: input[type='email']
+"""
+    )
+    site = sites["example_site"]
+    assert site.domain == "example.com"
+    assert site.registration_url == "https://example.com/signup"
+    assert site.notes == "Allowed by terms"
+    assert site.field_mappings["input[name='first_name']"] == "first_name"
+
+
+def test_sites_can_explicitly_require_optional_profile_fields(tmp_path: Path):
+    config_file = tmp_path / "config.yaml"
+    config_file.write_text(
+        """
+sites:
+  demo:
+    name: Demo
+    domain: example.com
+    registration_url: https://example.com/register
+    required_profile_fields:
+      - email
+      - phone_number
+      - password
+""",
+        encoding="utf-8",
+    )
+    site = load_config(config_file).sites["demo"]
+    assert site.required_profile_fields == ["email", "phone_number", "password"]
 
 
 def test_config_rejects_registration_url_outside_domain(tmp_path: Path):
@@ -82,3 +126,34 @@ def test_registration_batch_rejects_duplicate_sites_and_too_much_concurrency():
     with pytest.raises(SafetyError):
         validate_registration_batch([site, site], requested_concurrency=1)
     validate_registration_batch([site], requested_concurrency=1)
+
+
+def test_proxy_rotation_config_parses_api_settings(tmp_path: Path, monkeypatch: pytest.MonkeyPatch):
+    monkeypatch.setenv("PROXY_API_KEY", "secret-token")
+    config_file = tmp_path / "config.yaml"
+    config_file.write_text(
+        """
+proxy_rotation:
+  enabled: true
+  api_url: https://proxy-provider.example/next
+  api_key: ${PROXY_API_KEY}
+  api_key_header: X-API-Key
+  api_key_prefix: ""
+  proxy_json_path: data.proxy
+  timeout_seconds: 5
+sites:
+  demo:
+    name: Demo
+    domain: example.com
+    registration_url: https://example.com/register
+""",
+        encoding="utf-8",
+    )
+    config = load_config(config_file)
+    assert config.proxy_rotation.enabled is True
+    assert config.proxy_rotation.api_url == "https://proxy-provider.example/next"
+    assert config.proxy_rotation.api_key == "secret-token"
+    assert config.proxy_rotation.api_key_header == "X-API-Key"
+    assert config.proxy_rotation.api_key_prefix == ""
+    assert config.proxy_rotation.proxy_json_path == "data.proxy"
+    assert config.proxy_rotation.timeout_seconds == 5

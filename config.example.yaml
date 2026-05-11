@@ -6,6 +6,17 @@ screenshots_dir: "screenshots"
 playwright:
   # Always runs headless for safety and deployment consistency.
   headless: true
+proxy_rotation:
+  enabled: false
+  # Optional: fetch one fresh proxy per Playwright browser launch from an authorized proxy provider API.
+  # The API may return plain text like "http://user:pass@host:port" or JSON with either
+  # {"proxy":"http://user:pass@host:port"} / {"server":"http://host:port","username":"user","password":"pass"}.
+  api_url: "${PROXY_API_URL}"
+  api_key: "${PROXY_API_KEY}"
+  api_key_header: "Authorization"
+  api_key_prefix: "Bearer"
+  proxy_json_path: "proxy"
+  timeout_seconds: 10
 ai:
   enabled: false
   provider: "kimi" # or qwen
@@ -23,14 +34,17 @@ sites:
       - first_name
       - last_name
       - address_line1
-      - address_line2
       - state_region
       - city
       - postal_code
-      - phone_number
       - email
+      - country
+    # Optional fields such as address_line2, phone_number, and password can be added
+    # to required_profile_fields if a site requires them.
     submit_selector: "button[type='submit']"
     field_mappings:
-      "#firstName": "first_name"
-      "#lastName": "last_name"
-      "#email": "email"
+      first_name: "#firstName"
+      last_name: "#lastName"
+      email: "#email"
+      country: "#country"
+      password: "#password"

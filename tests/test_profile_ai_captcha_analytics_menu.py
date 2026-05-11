@@ -14,21 +14,22 @@ from app.models import AttemptStatus, UserProfile
 def test_user_profile_validation():
     profile = UserProfile(telegram_user_id=1, first_name="Ada")
     assert "last_name" in profile.missing_required_fields()
+    assert "address_line2" not in profile.missing_required_fields()
     assert not profile.is_complete()
     complete = UserProfile(
         telegram_user_id=1,
         first_name="Ada",
         last_name="Lovelace",
         address_line1="1 Algorithm Ave",
-        address_line2="Unit 2",
         state_region="CA",
         city="San Francisco",
         postal_code="94105",
-        phone_number="5551234567",
         email="ada@example.com",
+        country="US",
     )
     assert complete.is_complete()
     assert complete.masked_dict()["email"].startswith("ad***@")
+    assert complete.missing_required_fields(["phone_number"]) == ["phone_number"]
 
 
 def test_ai_json_parsing_accepts_valid_mapping():
@@ -40,7 +41,7 @@ def test_ai_json_parsing_rejects_invalid_json_and_unknown_fields():
     with pytest.raises(AIMapperError):
         parse_ai_mapping("not json", {"#email"})
     with pytest.raises(AIMapperError):
-        parse_ai_mapping('{"mappings":{"#email":{"profile_field":"password","confidence":1}}}', {"#email"})
+        parse_ai_mapping('{"mappings":{"#email":{"profile_field":"ssn","confidence":1}}}', {"#email"})
 
 
 class FakeLocator:
@@ -98,7 +99,7 @@ def test_analytics_calculations(tmp_path: Path):
 def test_menu_routing_contains_required_callbacks():
     markup = main_menu()
     callbacks = {button.callback_data for row in markup.inline_keyboard for button in row}
-    assert {"register", "register_all", "info", "edit", "sites", "analytics", "settings", "help", "cancel"}.issubset(callbacks)
+    assert {"register", "register_all", "info", "edit", "sites", "upload_sites", "status", "analytics", "export_logs", "settings", "help", "cancel"}.issubset(callbacks)
 
 
 def test_profile_edit_sequence_advances_through_fields():
@@ -129,3 +130,29 @@ def test_profile_edit_sequence_advances_through_fields():
     assert EDITING_FIELD_KEY not in context.user_data
     assert PROFILE_EDIT_QUEUE_KEY not in context.user_data
     assert remaining_profile_fields_after(PROFILE_FIELDS[-1]) == []
+
+
+def test_profile_prompt_marks_optional_fields_as_skippable():
+    from app.bot import profile_field_prompt
+
+    assert "optional" in profile_field_prompt("address_line2")
+    assert "skip" in profile_field_prompt("password")
+    assert "skip" not in profile_field_prompt("first_name")
+
+
+def test_proxy_response_parsing_accepts_text_and_json_formats():
+    from app.proxy import parse_proxy_response
+
+    assert parse_proxy_response("http://user:pass@proxy.example:8080") == {
+        "server": "http://proxy.example:8080",
+        "username": "user",
+        "password": "pass",
+    }
+    assert parse_proxy_response('{"data":{"proxy":"socks5://proxy.example:1080"}}', "application/json", "data.proxy") == {
+        "server": "socks5://proxy.example:1080"
+    }
+    assert parse_proxy_response('{"server":"https://proxy.example:8443","username":"u","password":"p"}', "application/json") == {
+        "server": "https://proxy.example:8443",
+        "username": "u",
+        "password": "p",
+    }

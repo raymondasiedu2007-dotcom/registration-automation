@@ -12,7 +12,7 @@ CREATE TABLE IF NOT EXISTS users (telegram_user_id INTEGER PRIMARY KEY, created_
 CREATE TABLE IF NOT EXISTS user_profiles (
     telegram_user_id INTEGER PRIMARY KEY, first_name TEXT DEFAULT '', last_name TEXT DEFAULT '', address_line1 TEXT DEFAULT '',
     address_line2 TEXT DEFAULT '', state_region TEXT DEFAULT '', city TEXT DEFAULT '', postal_code TEXT DEFAULT '', phone_number TEXT DEFAULT '',
-    email TEXT DEFAULT '', updated_at TEXT NOT NULL, FOREIGN KEY (telegram_user_id) REFERENCES users(telegram_user_id));
+    email TEXT DEFAULT '', country TEXT DEFAULT '', password TEXT DEFAULT '', updated_at TEXT NOT NULL, FOREIGN KEY (telegram_user_id) REFERENCES users(telegram_user_id));
 CREATE TABLE IF NOT EXISTS registration_attempts (
     id INTEGER PRIMARY KEY AUTOINCREMENT, telegram_user_id INTEGER NOT NULL, site_key TEXT NOT NULL, status TEXT NOT NULL,
     started_at TEXT NOT NULL, completed_at TEXT, failure_reason TEXT, failure_category TEXT, manual_interventions INTEGER DEFAULT 0,
@@ -24,6 +24,13 @@ CREATE TABLE IF NOT EXISTS error_logs (
     id INTEGER PRIMARY KEY AUTOINCREMENT, telegram_user_id INTEGER, site_key TEXT, category TEXT NOT NULL, message TEXT NOT NULL,
     details_json TEXT, screenshot_path TEXT, created_at TEXT NOT NULL);
 """
+
+
+def _ensure_profile_columns(db: sqlite3.Connection) -> None:
+    existing = {row["name"] for row in db.execute("PRAGMA table_info(user_profiles)").fetchall()}
+    for field in PROFILE_FIELDS:
+        if field not in existing:
+            db.execute(f"ALTER TABLE user_profiles ADD COLUMN {field} TEXT DEFAULT ''")
 
 
 def utcnow_iso() -> str:
@@ -42,6 +49,7 @@ class Database:
     async def init(self) -> None:
         with self._connect() as db:
             db.executescript(SCHEMA)
+            _ensure_profile_columns(db)
 
     async def ensure_user(self, telegram_user_id: int) -> None:
         now = utcnow_iso()
@@ -99,7 +107,6 @@ class Database:
                 (row["site_key"], 1 if status == AttemptStatus.SUCCESS else 0, 1 if status == AttemptStatus.FAILED else 0, manual_interventions, duration, completed_at),
             )
 
-
     async def successful_site_keys_for_user(self, telegram_user_id: int) -> set[str]:
         with self._connect() as db:
             rows = db.execute(
@@ -107,6 +114,26 @@ class Database:
                 (telegram_user_id, AttemptStatus.SUCCESS.value),
             ).fetchall()
         return {str(row["site_key"]) for row in rows}
+
+    async def recent_attempts_for_user(self, telegram_user_id: int, limit: int = 10) -> list[dict[str, object]]:
+        with self._connect() as db:
+            rows = db.execute(
+                "SELECT site_key, status, started_at, completed_at, failure_reason, manual_interventions FROM registration_attempts WHERE telegram_user_id=? ORDER BY started_at DESC LIMIT ?",
+                (telegram_user_id, limit),
+            ).fetchall()
+        return [dict(row) for row in rows]
+
+    async def export_logs_for_user(self, telegram_user_id: int) -> dict[str, object]:
+        with self._connect() as db:
+            attempts = db.execute(
+                "SELECT site_key, status, started_at, completed_at, failure_reason, failure_category, manual_interventions, duration_seconds FROM registration_attempts WHERE telegram_user_id=? ORDER BY started_at DESC",
+                (telegram_user_id,),
+            ).fetchall()
+            errors = db.execute(
+                "SELECT site_key, category, message, details_json, screenshot_path, created_at FROM error_logs WHERE telegram_user_id=? ORDER BY created_at DESC",
+                (telegram_user_id,),
+            ).fetchall()
+        return {"attempts": [dict(row) for row in attempts], "errors": [dict(row) for row in errors]}
 
     async def log_error(self, telegram_user_id: int | None, site_key: str | None, category: str, message: str, details: dict | None = None, screenshot_path: str | None = None) -> None:
         with self._connect() as db:
