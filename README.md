@@ -14,6 +14,7 @@ This project is intentionally limited:
 - It rejects duplicate site registrations in the same task and must not be used to create spam accounts.
 - Final Submit/Register is never clicked until the Telegram user approves the final screenshot for each site.
 - Playwright runs in headless mode for safety and deployment consistency.
+- Optional proxy rotation is supported only through a configured, authorized proxy provider API; it must not be used to bypass CAPTCHA, rate limits, anti-bot controls, or access restrictions.
 
 ## Project structure
 
@@ -139,6 +140,30 @@ Before any submit/register click, the bot sends a screenshot with:
 > Approve final submission?
 
 The submit button is clicked only after **Approve final submission** is pressed for that site. In a multi-site batch, each site sends its own screenshot and approval button. Cancelling resolves pending approvals as rejected and stops submissions that have not already been approved.
+
+
+## Optional proxy rotation API
+
+Proxy rotation can be enabled when you have authorization to use a proxy provider for the configured sites. When enabled, the runner calls the configured API once per Playwright browser launch and passes the returned proxy to Chromium. This feature does not bypass CAPTCHA, verification, rate limits, or access controls; those safety pauses and final approval still apply.
+
+```yaml
+proxy_rotation:
+  enabled: true
+  api_url: "${PROXY_API_URL}"
+  api_key: "${PROXY_API_KEY}"
+  api_key_header: "Authorization"
+  api_key_prefix: "Bearer"
+  proxy_json_path: "proxy"
+  timeout_seconds: 10
+```
+
+Supported API responses:
+
+- Plain text proxy URL: `http://user:pass@proxy.example:8080`
+- JSON proxy URL: `{ "proxy": "socks5://proxy.example:1080" }`
+- JSON Playwright-style fields: `{ "server": "http://proxy.example:8080", "username": "user", "password": "pass" }`
+
+Proxy URLs must include an `http`, `https`, `socks4`, or `socks5` scheme plus host and port. Set `proxy_json_path` to a dotted path such as `data.proxy` for nested JSON responses.
 
 ## Optional Kimi/Qwen AI mapping
 

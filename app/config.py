@@ -8,6 +8,7 @@ from urllib.parse import urlparse
 from app.yaml_compat import safe_load
 
 from app.models import PROFILE_FIELDS, SiteConfig
+from app.proxy import ProxyRotationConfig, load_proxy_rotation_config
 
 
 class ConfigError(ValueError):
@@ -25,6 +26,7 @@ class AppConfig:
         # not configurable to a visible browser mode from YAML.
         self.playwright_headless = True
         self.ai = raw.get("ai", {})
+        self.proxy_rotation: ProxyRotationConfig = load_proxy_rotation_config(raw)
         self.sites = _parse_sites(raw.get("sites", {}))
 
     @property
