@@ -1,0 +1,1945 @@
+telegram:
+  bot_token: ${TELEGRAM_BOT_TOKEN}
+database:
+  path: registration_bot.sqlite3
+screenshots_dir: screenshots
+playwright:
+  headless: true
+proxy_rotation:
+  enabled: false
+  api_url: ${PROXY_API_URL}
+  api_key: ${PROXY_API_KEY}
+  api_key_header: Authorization
+  api_key_prefix: Bearer
+  proxy_json_path: proxy
+  timeout_seconds: 10
+ai:
+  enabled: false
+  provider: kimi
+  base_url: https://api.moonshot.ai/v1
+  api_key: ${AI_API_KEY}
+  model: kimi-k2
+  confidence_threshold: 0.8
+sites:
+  fairway_drugs_rewards_club:
+    name: Fairway Drugs Rewards Club
+    domain: fairwaydrugs.com
+    registration_url: https://www.fairwaydrugs.com/rewards-club
+    enabled: true
+    required_profile_fields:
+    - first_name
+    - last_name
+    - email
+    - country
+    submit_selector: button[type='submit']
+    field_mappings:
+      first_name: input[name*='first']
+      last_name: input[name*='last']
+      email: input[type='email']
+      country: select[name*='country']
+      password: input[type='password']
+      phone_number: input[type='tel']
+    notes: Only use with authorization and according to site terms.
+  pbis_rewards:
+    name: PBIS Rewards
+    domain: pbisrewards.com
+    registration_url: https://www.pbisrewards.com/login/
+    enabled: true
+    required_profile_fields:
+    - first_name
+    - last_name
+    - email
+    - country
+    submit_selector: button[type='submit']
+    field_mappings:
+      first_name: input[name*='first']
+      last_name: input[name*='last']
+      email: input[type='email']
+      country: select[name*='country']
+      password: input[type='password']
+      phone_number: input[type='tel']
+    notes: Only use with authorization and according to site terms.
+  sony_rewards:
+    name: Sony Rewards
+    domain: rewards.sony.com
+    registration_url: https://www.rewards.sony.com/
+    enabled: true
+    required_profile_fields:
+    - first_name
+    - last_name
+    - email
+    - country
+    submit_selector: button[type='submit']
+    field_mappings:
+      first_name: input[name*='first']
+      last_name: input[name*='last']
+      email: input[type='email']
+      country: select[name*='country']
+      password: input[type='password']
+      phone_number: input[type='tel']
+    notes: Only use with authorization and according to site terms.
+  free_stuff_finder_reward_programs:
+    name: Free Stuff Finder Reward Programs
+    domain: freestufffinder.com
+    registration_url: https://www.freestufffinder.com/how-to-coupon/reward-programs/
+    enabled: false
+    required_profile_fields:
+    - first_name
+    - last_name
+    - email
+    - country
+    submit_selector: button[type='submit']
+    field_mappings:
+      first_name: input[name*='first']
+      last_name: input[name*='last']
+      email: input[type='email']
+      country: select[name*='country']
+      password: input[type='password']
+      phone_number: input[type='tel']
+    notes: 'Review required: this may be an article, documentation, login, or non-direct signup page. Enable only after confirming
+      authorization and site terms.'
+  stripes_7rewards:
+    name: Stripes 7Rewards
+    domain: stripesstores.com
+    registration_url: https://stripesstores.com/7Rewards/
+    enabled: true
+    required_profile_fields:
+    - first_name
+    - last_name
+    - email
+    - country
+    submit_selector: button[type='submit']
+    field_mappings:
+      first_name: input[name*='first']
+      last_name: input[name*='last']
+      email: input[type='email']
+      country: select[name*='country']
+      password: input[type='password']
+      phone_number: input[type='tel']
+    notes: Only use with authorization and according to site terms.
+  money_pantry_rewards_programs:
+    name: Money Pantry Rewards Programs
+    domain: moneypantry.com
+    registration_url: https://moneypantry.com/rewards-programs/
+    enabled: false
+    required_profile_fields:
+    - first_name
+    - last_name
+    - email
+    - country
+    submit_selector: button[type='submit']
+    field_mappings:
+      first_name: input[name*='first']
+      last_name: input[name*='last']
+      email: input[type='email']
+      country: select[name*='country']
+      password: input[type='password']
+      phone_number: input[type='tel']
+    notes: 'Review required: this may be an article, documentation, login, or non-direct signup page. Enable only after confirming
+      authorization and site terms.'
+  retailmenot_rewards_programs:
+    name: RetailMeNot Rewards Programs
+    domain: retailmenot.com
+    registration_url: https://www.retailmenot.com/blog/stores-with-the-best-rewards-programs.html
+    enabled: false
+    required_profile_fields:
+    - first_name
+    - last_name
+    - email
+    - country
+    submit_selector: button[type='submit']
+    field_mappings:
+      first_name: input[name*='first']
+      last_name: input[name*='last']
+      email: input[type='email']
+      country: select[name*='country']
+      password: input[type='password']
+      phone_number: input[type='tel']
+    notes: 'Review required: this may be an article, documentation, login, or non-direct signup page. Enable only after confirming
+      authorization and site terms.'
+  aep_energy_reward_store:
+    name: AEP Energy Reward Store
+    domain: aepenergyrewardstore.com
+    registration_url: https://aepenergyrewardstore.com/pages/register-or-log-in
+    enabled: true
+    required_profile_fields:
+    - first_name
+    - last_name
+    - email
+    - country
+    submit_selector: button[type='submit']
+    field_mappings:
+      first_name: input[name*='first']
+      last_name: input[name*='last']
+      email: input[type='email']
+      country: select[name*='country']
+      password: input[type='password']
+      phone_number: input[type='tel']
+    notes: Only use with authorization and according to site terms.
+  howstuffworks_store_rewards_guide:
+    name: HowStuffWorks Store Rewards Guide
+    domain: money.howstuffworks.com
+    registration_url: https://money.howstuffworks.com/personal-finance/budgeting/how-to-utilize-store-rewards-program.htm
+    enabled: false
+    required_profile_fields:
+    - first_name
+    - last_name
+    - email
+    - country
+    submit_selector: button[type='submit']
+    field_mappings:
+      first_name: input[name*='first']
+      last_name: input[name*='last']
+      email: input[type='email']
+      country: select[name*='country']
+      password: input[type='password']
+      phone_number: input[type='tel']
+    notes: 'Review required: this may be an article, documentation, login, or non-direct signup page. Enable only after confirming
+      authorization and site terms.'
+  register_card:
+    name: Register Card
+    domain: registercard.us
+    registration_url: https://www.registercard.us/
+    enabled: true
+    required_profile_fields:
+    - first_name
+    - last_name
+    - email
+    - country
+    submit_selector: button[type='submit']
+    field_mappings:
+      first_name: input[name*='first']
+      last_name: input[name*='last']
+      email: input[type='email']
+      country: select[name*='country']
+      password: input[type='password']
+      phone_number: input[type='tel']
+    notes: Only use with authorization and according to site terms.
+  shop_n_save_loyalty_register_card:
+    name: Shop N Save Loyalty Register Card
+    domain: shopnsavefood.com
+    registration_url: https://www.shopnsavefood.com/loyalty/Register%20Card
+    enabled: true
+    required_profile_fields:
+    - first_name
+    - last_name
+    - email
+    - country
+    submit_selector: button[type='submit']
+    field_mappings:
+      first_name: input[name*='first']
+      last_name: input[name*='last']
+      email: input[type='email']
+      country: select[name*='country']
+      password: input[type='password']
+      phone_number: input[type='tel']
+    notes: Only use with authorization and according to site terms.
+  my_otc_store_rewards_program:
+    name: My OTC Store Rewards Program
+    domain: myotcstore.com
+    registration_url: https://www.myotcstore.com/rewards-program/
+    enabled: true
+    required_profile_fields:
+    - first_name
+    - last_name
+    - email
+    - country
+    submit_selector: button[type='submit']
+    field_mappings:
+      first_name: input[name*='first']
+      last_name: input[name*='last']
+      email: input[type='email']
+      country: select[name*='country']
+      password: input[type='password']
+      phone_number: input[type='tel']
+    notes: Only use with authorization and according to site terms.
+  shogun_loyalty_program_guide:
+    name: Shogun Loyalty Program Guide
+    domain: getshogun.com
+    registration_url: https://getshogun.com/learn/create-loyalty-program-online-store/
+    enabled: false
+    required_profile_fields:
+    - first_name
+    - last_name
+    - email
+    - country
+    submit_selector: button[type='submit']
+    field_mappings:
+      first_name: input[name*='first']
+      last_name: input[name*='last']
+      email: input[type='email']
+      country: select[name*='country']
+      password: input[type='password']
+      phone_number: input[type='tel']
+    notes: 'Review required: this may be an article, documentation, login, or non-direct signup page. Enable only after confirming
+      authorization and site terms.'
+  sessionm_reward_store_docs:
+    name: SessionM Reward Store Docs
+    domain: docs.sessionm.com
+    registration_url: https://docs.sessionm.com/Procedures/Reward%20Stores/p_rs_create.htm
+    enabled: false
+    required_profile_fields:
+    - first_name
+    - last_name
+    - email
+    - country
+    submit_selector: button[type='submit']
+    field_mappings:
+      first_name: input[name*='first']
+      last_name: input[name*='last']
+      email: input[type='email']
+      country: select[name*='country']
+      password: input[type='password']
+      phone_number: input[type='tel']
+    notes: 'Review required: this may be an article, documentation, login, or non-direct signup page. Enable only after confirming
+      authorization and site terms.'
+  valero_star_rewards:
+    name: Valero Star Rewards
+    domain: starrewards.valero.com
+    registration_url: https://starrewards.valero.com/register/
+    enabled: true
+    required_profile_fields:
+    - first_name
+    - last_name
+    - email
+    - country
+    submit_selector: button[type='submit']
+    field_mappings:
+      first_name: input[name*='first']
+      last_name: input[name*='last']
+      email: input[type='email']
+      country: select[name*='country']
+      password: input[type='password']
+      phone_number: input[type='tel']
+    notes: Only use with authorization and according to site terms.
+  enrollnow_vip_login_2697:
+    name: EnrollNow VIP Login 2697
+    domain: enrollnow.vip
+    registration_url: https://enrollnow.vip/login/2697
+    enabled: true
+    required_profile_fields:
+    - first_name
+    - last_name
+    - email
+    - country
+    submit_selector: button[type='submit']
+    field_mappings:
+      first_name: input[name*='first']
+      last_name: input[name*='last']
+      email: input[type='email']
+      country: select[name*='country']
+      password: input[type='password']
+      phone_number: input[type='tel']
+    notes: Only use with authorization and according to site terms.
+  google_books_store_reward_result_1:
+    name: Google Books Store Reward Result 1
+    domain: books.google.com
+    registration_url: https://books.google.com/books?id=gaRXEAAAQBAJ&pg=PA44&lpg=PA44&dq=store+reward+signup
+    enabled: false
+    required_profile_fields:
+    - first_name
+    - last_name
+    - email
+    - country
+    submit_selector: button[type='submit']
+    field_mappings:
+      first_name: input[name*='first']
+      last_name: input[name*='last']
+      email: input[type='email']
+      country: select[name*='country']
+      password: input[type='password']
+      phone_number: input[type='tel']
+    notes: 'Review required: this may be an article, documentation, login, or non-direct signup page. Enable only after confirming
+      authorization and site terms.'
+  google_books_store_reward_result_2:
+    name: Google Books Store Reward Result 2
+    domain: books.google.com
+    registration_url: https://books.google.com/books?id=1_Sz1dd6-s0C&pg=PT20&lpg=PT20&dq=store+reward+signup
+    enabled: false
+    required_profile_fields:
+    - first_name
+    - last_name
+    - email
+    - country
+    submit_selector: button[type='submit']
+    field_mappings:
+      first_name: input[name*='first']
+      last_name: input[name*='last']
+      email: input[type='email']
+      country: select[name*='country']
+      password: input[type='password']
+      phone_number: input[type='tel']
+    notes: 'Review required: this may be an article, documentation, login, or non-direct signup page. Enable only after confirming
+      authorization and site terms.'
+  google_books_store_reward_result_3:
+    name: Google Books Store Reward Result 3
+    domain: books.google.com
+    registration_url: https://books.google.com/books?id=4loRsJoWZYgC&pg=PT132&lpg=PT132&dq=store+reward+signup
+    enabled: false
+    required_profile_fields:
+    - first_name
+    - last_name
+    - email
+    - country
+    submit_selector: button[type='submit']
+    field_mappings:
+      first_name: input[name*='first']
+      last_name: input[name*='last']
+      email: input[type='email']
+      country: select[name*='country']
+      password: input[type='password']
+      phone_number: input[type='tel']
+    notes: 'Review required: this may be an article, documentation, login, or non-direct signup page. Enable only after confirming
+      authorization and site terms.'
+  popileriz_cstore_rewards:
+    name: Popileriz CStore Rewards
+    domain: popileriz.com
+    registration_url: https://popileriz.com/www-cstorerewards-com/
+    enabled: true
+    required_profile_fields:
+    - first_name
+    - last_name
+    - email
+    - country
+    submit_selector: button[type='submit']
+    field_mappings:
+      first_name: input[name*='first']
+      last_name: input[name*='last']
+      email: input[type='email']
+      country: select[name*='country']
+      password: input[type='password']
+      phone_number: input[type='tel']
+    notes: Only use with authorization and according to site terms.
+  google_books_store_reward_result_4:
+    name: Google Books Store Reward Result 4
+    domain: books.google.com
+    registration_url: https://books.google.com/books?id=KAtOAAAAYAAJ&pg=RA13-PA4&lpg=RA13-PA4&dq=store+reward+signup
+    enabled: false
+    required_profile_fields:
+    - first_name
+    - last_name
+    - email
+    - country
+    submit_selector: button[type='submit']
+    field_mappings:
+      first_name: input[name*='first']
+      last_name: input[name*='last']
+      email: input[type='email']
+      country: select[name*='country']
+      password: input[type='password']
+      phone_number: input[type='tel']
+    notes: 'Review required: this may be an article, documentation, login, or non-direct signup page. Enable only after confirming
+      authorization and site terms.'
+  google_books_store_reward_result_5:
+    name: Google Books Store Reward Result 5
+    domain: books.google.com
+    registration_url: https://books.google.com/books?id=fbcNAQAAIAAJ&pg=RA7-PA8&lpg=RA7-PA8&dq=store+reward+signup
+    enabled: false
+    required_profile_fields:
+    - first_name
+    - last_name
+    - email
+    - country
+    submit_selector: button[type='submit']
+    field_mappings:
+      first_name: input[name*='first']
+      last_name: input[name*='last']
+      email: input[type='email']
+      country: select[name*='country']
+      password: input[type='password']
+      phone_number: input[type='tel']
+    notes: 'Review required: this may be an article, documentation, login, or non-direct signup page. Enable only after confirming
+      authorization and site terms.'
+  google_books_store_reward_result_6:
+    name: Google Books Store Reward Result 6
+    domain: books.google.com
+    registration_url: https://books.google.com/books?id=O28fAQAAMAAJ&pg=PA4776&lpg=PA4776&dq=store+reward+signup
+    enabled: false
+    required_profile_fields:
+    - first_name
+    - last_name
+    - email
+    - country
+    submit_selector: button[type='submit']
+    field_mappings:
+      first_name: input[name*='first']
+      last_name: input[name*='last']
+      email: input[type='email']
+      country: select[name*='country']
+      password: input[type='password']
+      phone_number: input[type='tel']
+    notes: 'Review required: this may be an article, documentation, login, or non-direct signup page. Enable only after confirming
+      authorization and site terms.'
+  google_books_store_reward_result_7:
+    name: Google Books Store Reward Result 7
+    domain: books.google.com
+    registration_url: https://books.google.com/books?id=tbGMe3Qugu8C&pg=RA25-PA8&lpg=RA25-PA8&dq=store+reward+signup
+    enabled: false
+    required_profile_fields:
+    - first_name
+    - last_name
+    - email
+    - country
+    submit_selector: button[type='submit']
+    field_mappings:
+      first_name: input[name*='first']
+      last_name: input[name*='last']
+      email: input[type='email']
+      country: select[name*='country']
+      password: input[type='password']
+      phone_number: input[type='tel']
+    notes: 'Review required: this may be an article, documentation, login, or non-direct signup page. Enable only after confirming
+      authorization and site terms.'
+  best_rewards_programs_signup_bonuses:
+    name: Best Rewards Programs Signup Bonuses
+    domain: bestrewardsprograms.com
+    registration_url: https://bestrewardsprograms.com/quick-rewards-signup-bonuses-where-you-shop/
+    enabled: false
+    required_profile_fields:
+    - first_name
+    - last_name
+    - email
+    - country
+    submit_selector: button[type='submit']
+    field_mappings:
+      first_name: input[name*='first']
+      last_name: input[name*='last']
+      email: input[type='email']
+      country: select[name*='country']
+      password: input[type='password']
+      phone_number: input[type='tel']
+    notes: 'Review required: this may be an article, documentation, login, or non-direct signup page. Enable only after confirming
+      authorization and site terms.'
+  groupon_top_reward_programs:
+    name: Groupon Top Reward Programs
+    domain: groupon.com
+    registration_url: https://www.groupon.com/coupons/blog/top-reward-programs
+    enabled: false
+    required_profile_fields:
+    - first_name
+    - last_name
+    - email
+    - country
+    submit_selector: button[type='submit']
+    field_mappings:
+      first_name: input[name*='first']
+      last_name: input[name*='last']
+      email: input[type='email']
+      country: select[name*='country']
+      password: input[type='password']
+      phone_number: input[type='tel']
+    notes: 'Review required: this may be an article, documentation, login, or non-direct signup page. Enable only after confirming
+      authorization and site terms.'
+  the_krazy_coupon_lady_rewards_programs:
+    name: The Krazy Coupon Lady Rewards Programs
+    domain: thekrazycouponlady.com
+    registration_url: https://thekrazycouponlady.com/tips/money/17-best-free-store-loyalty-programs-to-join21608
+    enabled: false
+    required_profile_fields:
+    - first_name
+    - last_name
+    - email
+    - country
+    submit_selector: button[type='submit']
+    field_mappings:
+      first_name: input[name*='first']
+      last_name: input[name*='last']
+      email: input[type='email']
+      country: select[name*='country']
+      password: input[type='password']
+      phone_number: input[type='tel']
+    notes: 'Review required: this may be an article, documentation, login, or non-direct signup page. Enable only after confirming
+      authorization and site terms.'
+  liveabout_rewards_programs_signup:
+    name: LiveAbout Rewards Programs Signup
+    domain: liveabout.com
+    registration_url: https://www.liveabout.com/rewards-programs-sign-up-1387794
+    enabled: false
+    required_profile_fields:
+    - first_name
+    - last_name
+    - email
+    - country
+    submit_selector: button[type='submit']
+    field_mappings:
+      first_name: input[name*='first']
+      last_name: input[name*='last']
+      email: input[type='email']
+      country: select[name*='country']
+      password: input[type='password']
+      phone_number: input[type='tel']
+    notes: 'Review required: this may be an article, documentation, login, or non-direct signup page. Enable only after confirming
+      authorization and site terms.'
+  dealnews_customer_rewards_programs:
+    name: DealNews Customer Rewards Programs
+    domain: dealnews.com
+    registration_url: https://www.dealnews.com/features/The-Best-Customer-Rewards-Programs/2183066.html
+    enabled: false
+    required_profile_fields:
+    - first_name
+    - last_name
+    - email
+    - country
+    submit_selector: button[type='submit']
+    field_mappings:
+      first_name: input[name*='first']
+      last_name: input[name*='last']
+      email: input[type='email']
+      country: select[name*='country']
+      password: input[type='password']
+      phone_number: input[type='tel']
+    notes: 'Review required: this may be an article, documentation, login, or non-direct signup page. Enable only after confirming
+      authorization and site terms.'
+  albertsons_market_rewards:
+    name: Albertsons Market Rewards
+    domain: albertsonsmarket.com
+    registration_url: https://www.albertsonsmarket.com/page/savings/rewards
+    enabled: true
+    required_profile_fields:
+    - first_name
+    - last_name
+    - email
+    - country
+    submit_selector: button[type='submit']
+    field_mappings:
+      first_name: input[name*='first']
+      last_name: input[name*='last']
+      email: input[type='email']
+      country: select[name*='country']
+      password: input[type='password']
+      phone_number: input[type='tel']
+    notes: Only use with authorization and according to site terms.
+  target_circle:
+    name: Target Circle
+    domain: target.com
+    registration_url: https://www.target.com/circle
+    enabled: true
+    required_profile_fields:
+    - first_name
+    - last_name
+    - email
+    - country
+    submit_selector: button[type='submit']
+    field_mappings:
+      first_name: input[name*='first']
+      last_name: input[name*='last']
+      email: input[type='email']
+      country: select[name*='country']
+      password: input[type='password']
+      phone_number: input[type='tel']
+    notes: Only use with authorization and according to site terms.
+  michaels_rewards:
+    name: Michaels Rewards
+    domain: michaels.com
+    registration_url: https://www.michaels.com/rewards
+    enabled: true
+    required_profile_fields:
+    - first_name
+    - last_name
+    - email
+    - country
+    submit_selector: button[type='submit']
+    field_mappings:
+      first_name: input[name*='first']
+      last_name: input[name*='last']
+      email: input[type='email']
+      country: select[name*='country']
+      password: input[type='password']
+      phone_number: input[type='tel']
+    notes: Only use with authorization and according to site terms.
+  hm_membership:
+    name: H&M Membership
+    domain: hm.com
+    registration_url: https://www2.hm.com/en_us/member/info.html
+    enabled: true
+    required_profile_fields:
+    - first_name
+    - last_name
+    - email
+    - country
+    submit_selector: button[type='submit']
+    field_mappings:
+      first_name: input[name*='first']
+      last_name: input[name*='last']
+      email: input[type='email']
+      country: select[name*='country']
+      password: input[type='password']
+      phone_number: input[type='tel']
+    notes: Only use with authorization and according to site terms.
+  ace_rewards:
+    name: Ace Rewards
+    domain: acehardware.com
+    registration_url: https://www.acehardware.com/ace-rewards
+    enabled: true
+    required_profile_fields:
+    - first_name
+    - last_name
+    - email
+    - country
+    submit_selector: button[type='submit']
+    field_mappings:
+      first_name: input[name*='first']
+      last_name: input[name*='last']
+      email: input[type='email']
+      country: select[name*='country']
+      password: input[type='password']
+      phone_number: input[type='tel']
+    notes: Only use with authorization and according to site terms.
+  hfcu_store_rewards_blog:
+    name: HFCU Store Rewards Blog
+    domain: go.hfcu.org
+    registration_url: https://go.hfcu.org/blog/7-things-to-know-before-signing-up-for-a-store-rewards-program
+    enabled: false
+    required_profile_fields:
+    - first_name
+    - last_name
+    - email
+    - country
+    submit_selector: button[type='submit']
+    field_mappings:
+      first_name: input[name*='first']
+      last_name: input[name*='last']
+      email: input[type='email']
+      country: select[name*='country']
+      password: input[type='password']
+      phone_number: input[type='tel']
+    notes: 'Review required: this may be an article, documentation, login, or non-direct signup page. Enable only after confirming
+      authorization and site terms.'
+  seven_eleven_7rewards:
+    name: 7-Eleven 7Rewards
+    domain: 7-eleven.com
+    registration_url: https://www.7-eleven.com/7rewards
+    enabled: true
+    required_profile_fields:
+    - first_name
+    - last_name
+    - email
+    - country
+    submit_selector: button[type='submit']
+    field_mappings:
+      first_name: input[name*='first']
+      last_name: input[name*='last']
+      email: input[type='email']
+      country: select[name*='country']
+      password: input[type='password']
+      phone_number: input[type='tel']
+    notes: Only use with authorization and according to site terms.
+  hallmark_crown_rewards:
+    name: Hallmark Crown Rewards
+    domain: hallmark.com
+    registration_url: https://www.hallmark.com/crown-rewards/
+    enabled: true
+    required_profile_fields:
+    - first_name
+    - last_name
+    - email
+    - country
+    submit_selector: button[type='submit']
+    field_mappings:
+      first_name: input[name*='first']
+      last_name: input[name*='last']
+      email: input[type='email']
+      country: select[name*='country']
+      password: input[type='password']
+      phone_number: input[type='tel']
+    notes: Only use with authorization and according to site terms.
+  big_lots_big_rewards:
+    name: Big Lots Big Rewards
+    domain: biglots.com
+    registration_url: https://www.biglots.com/bigrewards/bigrewards-about
+    enabled: true
+    required_profile_fields:
+    - first_name
+    - last_name
+    - email
+    - country
+    submit_selector: button[type='submit']
+    field_mappings:
+      first_name: input[name*='first']
+      last_name: input[name*='last']
+      email: input[type='email']
+      country: select[name*='country']
+      password: input[type='password']
+      phone_number: input[type='tel']
+    notes: Only use with authorization and according to site terms.
+  bath_body_works_rewards:
+    name: Bath & Body Works Rewards
+    domain: bathandbodyworks.com
+    registration_url: https://www.bathandbodyworks.com/loyalty-rewards
+    enabled: true
+    required_profile_fields:
+    - first_name
+    - last_name
+    - email
+    - country
+    submit_selector: button[type='submit']
+    field_mappings:
+      first_name: input[name*='first']
+      last_name: input[name*='last']
+      email: input[type='email']
+      country: select[name*='country']
+      password: input[type='password']
+      phone_number: input[type='tel']
+    notes: Only use with authorization and according to site terms.
+  taco_bell_rewards:
+    name: Taco Bell Rewards
+    domain: tacobell.com
+    registration_url: https://www.tacobell.com/rewards
+    enabled: true
+    required_profile_fields:
+    - first_name
+    - last_name
+    - email
+    - country
+    submit_selector: button[type='submit']
+    field_mappings:
+      first_name: input[name*='first']
+      last_name: input[name*='last']
+      email: input[type='email']
+      country: select[name*='country']
+      password: input[type='password']
+      phone_number: input[type='tel']
+    notes: Only use with authorization and according to site terms.
+  bed_bath_beyond_welcome_rewards:
+    name: Bed Bath & Beyond Welcome Rewards
+    domain: bedbathandbeyond.com
+    registration_url: https://www.bedbathandbeyond.com/welcomerewards
+    enabled: true
+    required_profile_fields:
+    - first_name
+    - last_name
+    - email
+    - country
+    submit_selector: button[type='submit']
+    field_mappings:
+      first_name: input[name*='first']
+      last_name: input[name*='last']
+      email: input[type='email']
+      country: select[name*='country']
+      password: input[type='password']
+      phone_number: input[type='tel']
+    notes: Only use with authorization and according to site terms.
+  brookshire_brothers_savings:
+    name: Brookshire Brothers Savings
+    domain: brookshirebrothers.com
+    registration_url: https://www.brookshirebrothers.com/savings
+    enabled: true
+    required_profile_fields:
+    - first_name
+    - last_name
+    - email
+    - country
+    submit_selector: button[type='submit']
+    field_mappings:
+      first_name: input[name*='first']
+      last_name: input[name*='last']
+      email: input[type='email']
+      country: select[name*='country']
+      password: input[type='password']
+      phone_number: input[type='tel']
+    notes: Only use with authorization and according to site terms.
+  circle_k_easy_rewards:
+    name: Circle K Easy Rewards
+    domain: circlek.com
+    registration_url: https://www.circlek.com/easyrewards
+    enabled: true
+    required_profile_fields:
+    - first_name
+    - last_name
+    - email
+    - country
+    submit_selector: button[type='submit']
+    field_mappings:
+      first_name: input[name*='first']
+      last_name: input[name*='last']
+      email: input[type='email']
+      country: select[name*='country']
+      password: input[type='password']
+      phone_number: input[type='tel']
+    notes: Only use with authorization and according to site terms.
+  chick_fil_a_one:
+    name: Chick-fil-A One
+    domain: chick-fil-a.com
+    registration_url: https://www.chick-fil-a.com/one
+    enabled: true
+    required_profile_fields:
+    - first_name
+    - last_name
+    - email
+    - country
+    submit_selector: button[type='submit']
+    field_mappings:
+      first_name: input[name*='first']
+      last_name: input[name*='last']
+      email: input[type='email']
+      country: select[name*='country']
+      password: input[type='password']
+      phone_number: input[type='tel']
+    notes: Only use with authorization and according to site terms.
+  more_rewards:
+    name: More Rewards
+    domain: morerewards.com
+    registration_url: https://www.morerewards.com/
+    enabled: true
+    required_profile_fields:
+    - first_name
+    - last_name
+    - email
+    - country
+    submit_selector: button[type='submit']
+    field_mappings:
+      first_name: input[name*='first']
+      last_name: input[name*='last']
+      email: input[type='email']
+      country: select[name*='country']
+      password: input[type='password']
+      phone_number: input[type='tel']
+    notes: Only use with authorization and according to site terms.
+  winn_dixie_rewards:
+    name: Winn-Dixie Rewards
+    domain: winndixie.com
+    registration_url: https://www.winndixie.com/rewards
+    enabled: true
+    required_profile_fields:
+    - first_name
+    - last_name
+    - email
+    - country
+    submit_selector: button[type='submit']
+    field_mappings:
+      first_name: input[name*='first']
+      last_name: input[name*='last']
+      email: input[type='email']
+      country: select[name*='country']
+      password: input[type='password']
+      phone_number: input[type='tel']
+    notes: Only use with authorization and according to site terms.
+  microsoft_rewards:
+    name: Microsoft Rewards
+    domain: microsoft.com
+    registration_url: https://www.microsoft.com/en-us/rewards
+    enabled: true
+    required_profile_fields:
+    - first_name
+    - last_name
+    - email
+    - country
+    submit_selector: button[type='submit']
+    field_mappings:
+      first_name: input[name*='first']
+      last_name: input[name*='last']
+      email: input[type='email']
+      country: select[name*='country']
+      password: input[type='password']
+      phone_number: input[type='tel']
+    notes: Only use with authorization and according to site terms.
+  columbia_rewards_program:
+    name: Columbia Rewards Program
+    domain: columbia.com
+    registration_url: https://www.columbia.com/rewardsprogram
+    enabled: true
+    required_profile_fields:
+    - first_name
+    - last_name
+    - email
+    - country
+    submit_selector: button[type='submit']
+    field_mappings:
+      first_name: input[name*='first']
+      last_name: input[name*='last']
+      email: input[type='email']
+      country: select[name*='country']
+      password: input[type='password']
+      phone_number: input[type='tel']
+    notes: Only use with authorization and according to site terms.
+  zaxbys_rewards:
+    name: Zaxby's Rewards
+    domain: zaxbys.com
+    registration_url: https://www.zaxbys.com/rewards
+    enabled: true
+    required_profile_fields:
+    - first_name
+    - last_name
+    - email
+    - country
+    submit_selector: button[type='submit']
+    field_mappings:
+      first_name: input[name*='first']
+      last_name: input[name*='last']
+      email: input[type='email']
+      country: select[name*='country']
+      password: input[type='password']
+      phone_number: input[type='tel']
+    notes: Only use with authorization and according to site terms.
+  fetch_rewards:
+    name: Fetch Rewards
+    domain: fetch.com
+    registration_url: https://fetch.com/
+    enabled: true
+    required_profile_fields:
+    - first_name
+    - last_name
+    - email
+    - country
+    submit_selector: button[type='submit']
+    field_mappings:
+      first_name: input[name*='first']
+      last_name: input[name*='last']
+      email: input[type='email']
+      country: select[name*='country']
+      password: input[type='password']
+      phone_number: input[type='tel']
+    notes: Only use with authorization and according to site terms.
+  speedway_speedy_rewards:
+    name: Speedway Speedy Rewards
+    domain: speedway.com
+    registration_url: https://www.speedway.com/speedy-rewards
+    enabled: true
+    required_profile_fields:
+    - first_name
+    - last_name
+    - email
+    - country
+    submit_selector: button[type='submit']
+    field_mappings:
+      first_name: input[name*='first']
+      last_name: input[name*='last']
+      email: input[type='email']
+      country: select[name*='country']
+      password: input[type='password']
+      phone_number: input[type='tel']
+    notes: Only use with authorization and according to site terms.
+  fivestars_customer_signup_blog:
+    name: FiveStars Customer Signup Blog
+    domain: blog.fivestars.com
+    registration_url: https://blog.fivestars.com/dos-donts-asking-customers-to-sign-up-to-your-reward-program-video/
+    enabled: false
+    required_profile_fields:
+    - first_name
+    - last_name
+    - email
+    - country
+    submit_selector: button[type='submit']
+    field_mappings:
+      first_name: input[name*='first']
+      last_name: input[name*='last']
+      email: input[type='email']
+      country: select[name*='country']
+      password: input[type='password']
+      phone_number: input[type='tel']
+    notes: 'Review required: this may be an article, documentation, login, or non-direct signup page. Enable only after confirming
+      authorization and site terms.'
+  the_fresh_market_loyalty:
+    name: The Fresh Market Loyalty
+    domain: thefreshmarket.com
+    registration_url: https://www.thefreshmarket.com/loyalty
+    enabled: true
+    required_profile_fields:
+    - first_name
+    - last_name
+    - email
+    - country
+    submit_selector: button[type='submit']
+    field_mappings:
+      first_name: input[name*='first']
+      last_name: input[name*='last']
+      email: input[type='email']
+      country: select[name*='country']
+      password: input[type='password']
+      phone_number: input[type='tel']
+    notes: Only use with authorization and according to site terms.
+  banana_republic_rewards:
+    name: Banana Republic Rewards
+    domain: bananarepublic.gap.com
+    registration_url: https://bananarepublic.gap.com/customerService/info.do?cid=1098875
+    enabled: true
+    required_profile_fields:
+    - first_name
+    - last_name
+    - email
+    - country
+    submit_selector: button[type='submit']
+    field_mappings:
+      first_name: input[name*='first']
+      last_name: input[name*='last']
+      email: input[type='email']
+      country: select[name*='country']
+      password: input[type='password']
+      phone_number: input[type='tel']
+    notes: Only use with authorization and according to site terms.
+  americas_thrift_rewards_program:
+    name: America's Thrift Rewards Program
+    domain: americasthrift.com
+    registration_url: https://www.americasthrift.com/shopping/rewards-program/
+    enabled: true
+    required_profile_fields:
+    - first_name
+    - last_name
+    - email
+    - country
+    submit_selector: button[type='submit']
+    field_mappings:
+      first_name: input[name*='first']
+      last_name: input[name*='last']
+      email: input[type='email']
+      country: select[name*='country']
+      password: input[type='password']
+      phone_number: input[type='tel']
+    notes: Only use with authorization and according to site terms.
+  us_news_retail_rewards_list:
+    name: US News Retail Rewards List
+    domain: money.usnews.com
+    registration_url: https://money.usnews.com/money/personal-finance/spending/slideshows/retail-rewards-and-loyalty-programs-worth-joining
+    enabled: false
+    required_profile_fields:
+    - first_name
+    - last_name
+    - email
+    - country
+    submit_selector: button[type='submit']
+    field_mappings:
+      first_name: input[name*='first']
+      last_name: input[name*='last']
+      email: input[type='email']
+      country: select[name*='country']
+      password: input[type='password']
+      phone_number: input[type='tel']
+    notes: 'Review required: this may be an article, documentation, login, or non-direct signup page. Enable only after confirming
+      authorization and site terms.'
+  kroger_free_membership:
+    name: Kroger Free Membership
+    domain: kroger.com
+    registration_url: https://www.kroger.com/pr/free-membership
+    enabled: true
+    required_profile_fields:
+    - first_name
+    - last_name
+    - email
+    - country
+    submit_selector: button[type='submit']
+    field_mappings:
+      first_name: input[name*='first']
+      last_name: input[name*='last']
+      email: input[type='email']
+      country: select[name*='country']
+      password: input[type='password']
+      phone_number: input[type='tel']
+    notes: Only use with authorization and according to site terms.
+  loves_my_love_rewards:
+    name: Love's My Love Rewards
+    domain: loves.com
+    registration_url: https://www.loves.com/en/my-love-rewards
+    enabled: true
+    required_profile_fields:
+    - first_name
+    - last_name
+    - email
+    - country
+    submit_selector: button[type='submit']
+    field_mappings:
+      first_name: input[name*='first']
+      last_name: input[name*='last']
+      email: input[type='email']
+      country: select[name*='country']
+      password: input[type='password']
+      phone_number: input[type='tel']
+    notes: Only use with authorization and according to site terms.
+  starbucks_rewards:
+    name: Starbucks Rewards
+    domain: starbucks.com
+    registration_url: https://www.starbucks.com/rewards
+    enabled: true
+    required_profile_fields:
+    - first_name
+    - last_name
+    - email
+    - country
+    submit_selector: button[type='submit']
+    field_mappings:
+      first_name: input[name*='first']
+      last_name: input[name*='last']
+      email: input[type='email']
+      country: select[name*='country']
+      password: input[type='password']
+      phone_number: input[type='tel']
+    notes: Only use with authorization and according to site terms.
+  samsung_rewards:
+    name: Samsung Rewards
+    domain: samsung.com
+    registration_url: https://www.samsung.com/us/rewards/
+    enabled: true
+    required_profile_fields:
+    - first_name
+    - last_name
+    - email
+    - country
+    submit_selector: button[type='submit']
+    field_mappings:
+      first_name: input[name*='first']
+      last_name: input[name*='last']
+      email: input[type='email']
+      country: select[name*='country']
+      password: input[type='password']
+      phone_number: input[type='tel']
+    notes: Only use with authorization and according to site terms.
+  american_eagle_real_rewards:
+    name: American Eagle Real Rewards
+    domain: ae.com
+    registration_url: https://www.ae.com/us/en/myaccount/real-rewards
+    enabled: true
+    required_profile_fields:
+    - first_name
+    - last_name
+    - email
+    - country
+    submit_selector: button[type='submit']
+    field_mappings:
+      first_name: input[name*='first']
+      last_name: input[name*='last']
+      email: input[type='email']
+      country: select[name*='country']
+      password: input[type='password']
+      phone_number: input[type='tel']
+    notes: Only use with authorization and according to site terms.
+  papa_murphys_myslice_rewards:
+    name: Papa Murphy's MySLICE Rewards
+    domain: papamurphys.com
+    registration_url: https://www.papamurphys.com/myslice-rewards/
+    enabled: true
+    required_profile_fields:
+    - first_name
+    - last_name
+    - email
+    - country
+    submit_selector: button[type='submit']
+    field_mappings:
+      first_name: input[name*='first']
+      last_name: input[name*='last']
+      email: input[type='email']
+      country: select[name*='country']
+      password: input[type='password']
+      phone_number: input[type='tel']
+    notes: Only use with authorization and according to site terms.
+  el_pollo_loco_rewards:
+    name: El Pollo Loco Rewards
+    domain: elpolloloco.com
+    registration_url: https://www.elpolloloco.com/rewards/
+    enabled: true
+    required_profile_fields:
+    - first_name
+    - last_name
+    - email
+    - country
+    submit_selector: button[type='submit']
+    field_mappings:
+      first_name: input[name*='first']
+      last_name: input[name*='last']
+      email: input[type='email']
+      country: select[name*='country']
+      password: input[type='password']
+      phone_number: input[type='tel']
+    notes: Only use with authorization and according to site terms.
+  gabes_rewards:
+    name: Gabe's Rewards
+    domain: gabesstores.com
+    registration_url: https://www.gabesstores.com/rewards
+    enabled: true
+    required_profile_fields:
+    - first_name
+    - last_name
+    - email
+    - country
+    submit_selector: button[type='submit']
+    field_mappings:
+      first_name: input[name*='first']
+      last_name: input[name*='last']
+      email: input[type='email']
+      country: select[name*='country']
+      password: input[type='password']
+      phone_number: input[type='tel']
+    notes: Only use with authorization and according to site terms.
+  moes_rewards:
+    name: Moe's Rewards
+    domain: moes.com
+    registration_url: https://www.moes.com/rewards
+    enabled: true
+    required_profile_fields:
+    - first_name
+    - last_name
+    - email
+    - country
+    submit_selector: button[type='submit']
+    field_mappings:
+      first_name: input[name*='first']
+      last_name: input[name*='last']
+      email: input[type='email']
+      country: select[name*='country']
+      password: input[type='password']
+      phone_number: input[type='tel']
+    notes: Only use with authorization and according to site terms.
+  true_value_rewards:
+    name: True Value Rewards
+    domain: rewards.truevalue.com
+    registration_url: https://rewards.truevalue.com/
+    enabled: true
+    required_profile_fields:
+    - first_name
+    - last_name
+    - email
+    - country
+    submit_selector: button[type='submit']
+    field_mappings:
+      first_name: input[name*='first']
+      last_name: input[name*='last']
+      email: input[type='email']
+      country: select[name*='country']
+      password: input[type='password']
+      phone_number: input[type='tel']
+    notes: Only use with authorization and according to site terms.
+  smoothie_king_healthy_rewards:
+    name: Smoothie King Healthy Rewards
+    domain: smoothieking.com
+    registration_url: https://www.smoothieking.com/healthy-rewards
+    enabled: true
+    required_profile_fields:
+    - first_name
+    - last_name
+    - email
+    - country
+    submit_selector: button[type='submit']
+    field_mappings:
+      first_name: input[name*='first']
+      last_name: input[name*='last']
+      email: input[type='email']
+      country: select[name*='country']
+      password: input[type='password']
+      phone_number: input[type='tel']
+    notes: Only use with authorization and according to site terms.
+  rubios_rewards:
+    name: Rubio's Rewards
+    domain: rubios.com
+    registration_url: https://www.rubios.com/rewards/
+    enabled: true
+    required_profile_fields:
+    - first_name
+    - last_name
+    - email
+    - country
+    submit_selector: button[type='submit']
+    field_mappings:
+      first_name: input[name*='first']
+      last_name: input[name*='last']
+      email: input[type='email']
+      country: select[name*='country']
+      password: input[type='password']
+      phone_number: input[type='tel']
+    notes: Only use with authorization and according to site terms.
+  american_girl_rewards:
+    name: American Girl Rewards
+    domain: americangirl.com
+    registration_url: https://www.americangirl.com/pages/rewards
+    enabled: true
+    required_profile_fields:
+    - first_name
+    - last_name
+    - email
+    - country
+    submit_selector: button[type='submit']
+    field_mappings:
+      first_name: input[name*='first']
+      last_name: input[name*='last']
+      email: input[type='email']
+      country: select[name*='country']
+      password: input[type='password']
+      phone_number: input[type='tel']
+    notes: Only use with authorization and according to site terms.
+  red_lobster_rewards:
+    name: Red Lobster Rewards
+    domain: redlobster.com
+    registration_url: https://www.redlobster.com/rewards
+    enabled: true
+    required_profile_fields:
+    - first_name
+    - last_name
+    - email
+    - country
+    submit_selector: button[type='submit']
+    field_mappings:
+      first_name: input[name*='first']
+      last_name: input[name*='last']
+      email: input[type='email']
+      country: select[name*='country']
+      password: input[type='password']
+      phone_number: input[type='tel']
+    notes: Only use with authorization and according to site terms.
+  papa_johns_papa_rewards:
+    name: Papa Johns Papa Rewards
+    domain: papajohns.com
+    registration_url: https://www.papajohns.com/order/papa-rewards
+    enabled: true
+    required_profile_fields:
+    - first_name
+    - last_name
+    - email
+    - country
+    submit_selector: button[type='submit']
+    field_mappings:
+      first_name: input[name*='first']
+      last_name: input[name*='last']
+      email: input[type='email']
+      country: select[name*='country']
+      password: input[type='password']
+      phone_number: input[type='tel']
+    notes: Only use with authorization and according to site terms.
+  hannaford_my_rewards:
+    name: Hannaford My Rewards
+    domain: hannaford.com
+    registration_url: https://www.hannaford.com/my-hannaford-rewards
+    enabled: true
+    required_profile_fields:
+    - first_name
+    - last_name
+    - email
+    - country
+    submit_selector: button[type='submit']
+    field_mappings:
+      first_name: input[name*='first']
+      last_name: input[name*='last']
+      email: input[type='email']
+      country: select[name*='country']
+      password: input[type='password']
+      phone_number: input[type='tel']
+    notes: Only use with authorization and according to site terms.
+  fred_meyer_rewards:
+    name: Fred Meyer Rewards
+    domain: fredmeyer.com
+    registration_url: https://www.fredmeyer.com/i/rewards/fred-meyer-rewards
+    enabled: true
+    required_profile_fields:
+    - first_name
+    - last_name
+    - email
+    - country
+    submit_selector: button[type='submit']
+    field_mappings:
+      first_name: input[name*='first']
+      last_name: input[name*='last']
+      email: input[type='email']
+      country: select[name*='country']
+      password: input[type='password']
+      phone_number: input[type='tel']
+    notes: Only use with authorization and according to site terms.
+  lenovo_rewards:
+    name: Lenovo Rewards
+    domain: lenovo.com
+    registration_url: https://www.lenovo.com/us/en/rewards/
+    enabled: true
+    required_profile_fields:
+    - first_name
+    - last_name
+    - email
+    - country
+    submit_selector: button[type='submit']
+    field_mappings:
+      first_name: input[name*='first']
+      last_name: input[name*='last']
+      email: input[type='email']
+      country: select[name*='country']
+      password: input[type='password']
+      phone_number: input[type='tel']
+    notes: Only use with authorization and according to site terms.
+  dollar_general_rewards:
+    name: Dollar General Rewards
+    domain: dollargeneral.com
+    registration_url: https://www.dollargeneral.com/deals/rewards
+    enabled: true
+    required_profile_fields:
+    - first_name
+    - last_name
+    - email
+    - country
+    submit_selector: button[type='submit']
+    field_mappings:
+      first_name: input[name*='first']
+      last_name: input[name*='last']
+      email: input[type='email']
+      country: select[name*='country']
+      password: input[type='password']
+      phone_number: input[type='tel']
+    notes: Only use with authorization and according to site terms.
+  schlotzskys_rewards:
+    name: Schlotzsky's Rewards
+    domain: schlotzskys.com
+    registration_url: https://www.schlotzskys.com/rewards
+    enabled: true
+    required_profile_fields:
+    - first_name
+    - last_name
+    - email
+    - country
+    submit_selector: button[type='submit']
+    field_mappings:
+      first_name: input[name*='first']
+      last_name: input[name*='last']
+      email: input[type='email']
+      country: select[name*='country']
+      password: input[type='password']
+      phone_number: input[type='tel']
+    notes: Only use with authorization and according to site terms.
+  caseys_login:
+    name: Casey's Login
+    domain: caseys.com
+    registration_url: https://www.caseys.com/login
+    enabled: true
+    required_profile_fields:
+    - first_name
+    - last_name
+    - email
+    - country
+    submit_selector: button[type='submit']
+    field_mappings:
+      first_name: input[name*='first']
+      last_name: input[name*='last']
+      email: input[type='email']
+      country: select[name*='country']
+      password: input[type='password']
+      phone_number: input[type='tel']
+    notes: Only use with authorization and according to site terms.
+  hardees_my_rewards:
+    name: Hardee's My Rewards
+    domain: hardees.com
+    registration_url: https://www.hardees.com/myrewards
+    enabled: true
+    required_profile_fields:
+    - first_name
+    - last_name
+    - email
+    - country
+    submit_selector: button[type='submit']
+    field_mappings:
+      first_name: input[name*='first']
+      last_name: input[name*='last']
+      email: input[type='email']
+      country: select[name*='country']
+      password: input[type='password']
+      phone_number: input[type='tel']
+    notes: Only use with authorization and according to site terms.
+  square_loyalty:
+    name: Square Loyalty
+    domain: squareup.com
+    registration_url: https://squareup.com/us/en/software/loyalty
+    enabled: false
+    required_profile_fields:
+    - first_name
+    - last_name
+    - email
+    - country
+    submit_selector: button[type='submit']
+    field_mappings:
+      first_name: input[name*='first']
+      last_name: input[name*='last']
+      email: input[type='email']
+      country: select[name*='country']
+      password: input[type='password']
+      phone_number: input[type='tel']
+    notes: 'Review required: this may be an article, documentation, login, or non-direct signup page. Enable only after confirming
+      authorization and site terms.'
+  southwest_rapid_rewards_shopping:
+    name: Southwest Rapid Rewards Shopping
+    domain: rapidrewardsshopping.southwest.com
+    registration_url: https://rapidrewardsshopping.southwest.com/
+    enabled: true
+    required_profile_fields:
+    - first_name
+    - last_name
+    - email
+    - country
+    submit_selector: button[type='submit']
+    field_mappings:
+      first_name: input[name*='first']
+      last_name: input[name*='last']
+      email: input[type='email']
+      country: select[name*='country']
+      password: input[type='password']
+      phone_number: input[type='tel']
+    notes: Only use with authorization and according to site terms.
+  txb_stores_loyalty:
+    name: TXB Stores Loyalty
+    domain: txbstores.com
+    registration_url: https://txbstores.com/loyalty/
+    enabled: true
+    required_profile_fields:
+    - first_name
+    - last_name
+    - email
+    - country
+    submit_selector: button[type='submit']
+    field_mappings:
+      first_name: input[name*='first']
+      last_name: input[name*='last']
+      email: input[type='email']
+      country: select[name*='country']
+      password: input[type='password']
+      phone_number: input[type='tel']
+    notes: Only use with authorization and according to site terms.
+  dc_goodwill_rewards_club_signup:
+    name: DC Goodwill Rewards Club Signup
+    domain: dcgoodwill.org
+    registration_url: https://dcgoodwill.org/shopping/rewards-club-sign-up/
+    enabled: true
+    required_profile_fields:
+    - first_name
+    - last_name
+    - email
+    - country
+    submit_selector: button[type='submit']
+    field_mappings:
+      first_name: input[name*='first']
+      last_name: input[name*='last']
+      email: input[type='email']
+      country: select[name*='country']
+      password: input[type='password']
+      phone_number: input[type='tel']
+    notes: Only use with authorization and according to site terms.
+  price_chopper_rewards_program:
+    name: Price Chopper Rewards Program
+    domain: mypricechopper.com
+    registration_url: https://www.mypricechopper.com/savings/rewards-program
+    enabled: true
+    required_profile_fields:
+    - first_name
+    - last_name
+    - email
+    - country
+    submit_selector: button[type='submit']
+    field_mappings:
+      first_name: input[name*='first']
+      last_name: input[name*='last']
+      email: input[type='email']
+      country: select[name*='country']
+      password: input[type='password']
+      phone_number: input[type='tel']
+    notes: Only use with authorization and according to site terms.
+  the_container_store_organized_insider:
+    name: The Container Store Organized Insider
+    domain: containerstore.com
+    registration_url: https://www.containerstore.com/organized-insider
+    enabled: true
+    required_profile_fields:
+    - first_name
+    - last_name
+    - email
+    - country
+    submit_selector: button[type='submit']
+    field_mappings:
+      first_name: input[name*='first']
+      last_name: input[name*='last']
+      email: input[type='email']
+      country: select[name*='country']
+      password: input[type='password']
+      phone_number: input[type='tel']
+    notes: Only use with authorization and according to site terms.
+  dig_rewards:
+    name: DIG Rewards
+    domain: diginn.com
+    registration_url: https://www.diginn.com/dig-rewards
+    enabled: true
+    required_profile_fields:
+    - first_name
+    - last_name
+    - email
+    - country
+    submit_selector: button[type='submit']
+    field_mappings:
+      first_name: input[name*='first']
+      last_name: input[name*='last']
+      email: input[type='email']
+      country: select[name*='country']
+      password: input[type='password']
+      phone_number: input[type='tel']
+    notes: Only use with authorization and according to site terms.
+  harveys_supermarkets_rewards:
+    name: Harveys Supermarkets Rewards
+    domain: harveyssupermarkets.com
+    registration_url: https://www.harveyssupermarkets.com/rewards
+    enabled: true
+    required_profile_fields:
+    - first_name
+    - last_name
+    - email
+    - country
+    submit_selector: button[type='submit']
+    field_mappings:
+      first_name: input[name*='first']
+      last_name: input[name*='last']
+      email: input[type='email']
+      country: select[name*='country']
+      password: input[type='password']
+      phone_number: input[type='tel']
+    notes: Only use with authorization and according to site terms.
+  homeland_stores_onecard:
+    name: Homeland Stores OneCard
+    domain: homelandstores.com
+    registration_url: https://www.homelandstores.com/loyalty/OneCard
+    enabled: true
+    required_profile_fields:
+    - first_name
+    - last_name
+    - email
+    - country
+    submit_selector: button[type='submit']
+    field_mappings:
+      first_name: input[name*='first']
+      last_name: input[name*='last']
+      email: input[type='email']
+      country: select[name*='country']
+      password: input[type='password']
+      phone_number: input[type='tel']
+    notes: Only use with authorization and according to site terms.
+  country_store_customer_rewards:
+    name: Country Store Customer Rewards
+    domain: countrystore.net
+    registration_url: https://www.countrystore.net/company/customer-rewards/
+    enabled: true
+    required_profile_fields:
+    - first_name
+    - last_name
+    - email
+    - country
+    submit_selector: button[type='submit']
+    field_mappings:
+      first_name: input[name*='first']
+      last_name: input[name*='last']
+      email: input[type='email']
+      country: select[name*='country']
+      password: input[type='password']
+      phone_number: input[type='tel']
+    notes: Only use with authorization and according to site terms.
+  on_the_border_rewards:
+    name: On The Border Rewards
+    domain: ontheborder.com
+    registration_url: https://www.ontheborder.com/border-rewards/
+    enabled: true
+    required_profile_fields:
+    - first_name
+    - last_name
+    - email
+    - country
+    submit_selector: button[type='submit']
+    field_mappings:
+      first_name: input[name*='first']
+      last_name: input[name*='last']
+      email: input[type='email']
+      country: select[name*='country']
+      password: input[type='password']
+      phone_number: input[type='tel']
+    notes: Only use with authorization and according to site terms.
+  world_market_rewards:
+    name: World Market Rewards
+    domain: worldmarket.com
+    registration_url: https://www.worldmarket.com/category/code/world-market-rewards.do
+    enabled: true
+    required_profile_fields:
+    - first_name
+    - last_name
+    - email
+    - country
+    submit_selector: button[type='submit']
+    field_mappings:
+      first_name: input[name*='first']
+      last_name: input[name*='last']
+      email: input[type='email']
+      country: select[name*='country']
+      password: input[type='password']
+      phone_number: input[type='tel']
+    notes: Only use with authorization and according to site terms.
+  gelsons_rewards:
+    name: Gelson's Rewards
+    domain: gelsons.com
+    registration_url: https://www.gelsons.com/rewards
+    enabled: true
+    required_profile_fields:
+    - first_name
+    - last_name
+    - email
+    - country
+    submit_selector: button[type='submit']
+    field_mappings:
+      first_name: input[name*='first']
+      last_name: input[name*='last']
+      email: input[type='email']
+      country: select[name*='country']
+      password: input[type='password']
+      phone_number: input[type='tel']
+    notes: Only use with authorization and according to site terms.
+  krispy_kreme_rewards:
+    name: Krispy Kreme Rewards
+    domain: krispykreme.com
+    registration_url: https://www.krispykreme.com/rewards
+    enabled: true
+    required_profile_fields:
+    - first_name
+    - last_name
+    - email
+    - country
+    submit_selector: button[type='submit']
+    field_mappings:
+      first_name: input[name*='first']
+      last_name: input[name*='last']
+      email: input[type='email']
+      country: select[name*='country']
+      password: input[type='password']
+      phone_number: input[type='tel']
+    notes: Only use with authorization and according to site terms.
+  noodles_rewards:
+    name: Noodles Rewards
+    domain: noodles.com
+    registration_url: https://www.noodles.com/rewards
+    enabled: true
+    required_profile_fields:
+    - first_name
+    - last_name
+    - email
+    - country
+    submit_selector: button[type='submit']
+    field_mappings:
+      first_name: input[name*='first']
+      last_name: input[name*='last']
+      email: input[type='email']
+      country: select[name*='country']
+      password: input[type='password']
+      phone_number: input[type='tel']
+    notes: Only use with authorization and according to site terms.
+  popshelf_rewards:
+    name: pOpshelf Rewards
+    domain: popshelf.com
+    registration_url: https://www.popshelf.com/rewards
+    enabled: true
+    required_profile_fields:
+    - first_name
+    - last_name
+    - email
+    - country
+    submit_selector: button[type='submit']
+    field_mappings:
+      first_name: input[name*='first']
+      last_name: input[name*='last']
+      email: input[type='email']
+      country: select[name*='country']
+      password: input[type='password']
+      phone_number: input[type='tel']
+    notes: Only use with authorization and according to site terms.
+  togos_rewards_signup:
+    name: TOGO'S Rewards Signup
+    domain: togos.com
+    registration_url: https://www.togos.com/rewards/rewards-signup/
+    enabled: true
+    required_profile_fields:
+    - first_name
+    - last_name
+    - email
+    - country
+    submit_selector: button[type='submit']
+    field_mappings:
+      first_name: input[name*='first']
+      last_name: input[name*='last']
+      email: input[type='email']
+      country: select[name*='country']
+      password: input[type='password']
+      phone_number: input[type='tel']
+    notes: Only use with authorization and according to site terms.
+  pizza_inn_rewards:
+    name: Pizza Inn Rewards
+    domain: pizzainn.com
+    registration_url: https://www.pizzainn.com/rewards/
+    enabled: true
+    required_profile_fields:
+    - first_name
+    - last_name
+    - email
+    - country
+    submit_selector: button[type='submit']
+    field_mappings:
+      first_name: input[name*='first']
+      last_name: input[name*='last']
+      email: input[type='email']
+      country: select[name*='country']
+      password: input[type='password']
+      phone_number: input[type='tel']
+    notes: Only use with authorization and according to site terms.
+  mypoints:
+    name: MyPoints
+    domain: mypoints.com
+    registration_url: https://www.mypoints.com/
+    enabled: true
+    required_profile_fields:
+    - first_name
+    - last_name
+    - email
+    - country
+    submit_selector: button[type='submit']
+    field_mappings:
+      first_name: input[name*='first']
+      last_name: input[name*='last']
+      email: input[type='email']
+      country: select[name*='country']
+      password: input[type='password']
+      phone_number: input[type='tel']
+    notes: Only use with authorization and according to site terms.
+  cinnabon_rewards:
+    name: Cinnabon Rewards
+    domain: cinnabon.com
+    registration_url: https://www.cinnabon.com/rewards
+    enabled: true
+    required_profile_fields:
+    - first_name
+    - last_name
+    - email
+    - country
+    submit_selector: button[type='submit']
+    field_mappings:
+      first_name: input[name*='first']
+      last_name: input[name*='last']
+      email: input[type='email']
+      country: select[name*='country']
+      password: input[type='password']
+      phone_number: input[type='tel']
+    notes: Only use with authorization and according to site terms.
+  schnucks_rewards:
+    name: Schnucks Rewards
+    domain: schnucks.com
+    registration_url: https://nourish.schnucks.com/schnucks-rewards/
+    enabled: true
+    required_profile_fields:
+    - first_name
+    - last_name
+    - email
+    - country
+    submit_selector: button[type='submit']
+    field_mappings:
+      first_name: input[name*='first']
+      last_name: input[name*='last']
+      email: input[type='email']
+      country: select[name*='country']
+      password: input[type='password']
+      phone_number: input[type='tel']
+    notes: Only use with authorization and according to site terms.
+  jimmy_johns_rewards:
+    name: Jimmy John's Rewards
+    domain: jimmyjohns.com
+    registration_url: https://www.jimmyjohns.com/rewards/
+    enabled: true
+    required_profile_fields:
+    - first_name
+    - last_name
+    - email
+    - country
+    submit_selector: button[type='submit']
+    field_mappings:
+      first_name: input[name*='first']
+      last_name: input[name*='last']
+      email: input[type='email']
+      country: select[name*='country']
+      password: input[type='password']
+      phone_number: input[type='tel']
+    notes: Only use with authorization and according to site terms.
