@@ -16,7 +16,7 @@ from app.config import AppConfig, ConfigError, load_config, parse_sites_config_t
 from app.database import Database
 from app.logging_config import configure_logging
 from app.menu import approval_menu, continue_menu, edit_profile_menu, main_menu, sites_menu
-from app.models import AttemptStatus, PROFILE_FIELDS, SiteConfig, UserProfile
+from app.models import AttemptStatus, OPTIONAL_PROFILE_FIELDS, PROFILE_FIELDS, SiteConfig, UserProfile
 from app.playwright_runner import PlaywrightRegistrationRunner
 from app.proxy import ProxyRotator
 from app.safety import MAX_CONCURRENT_REGISTRATIONS, MAX_CONFIGURED_UNIQUE_SITES, validate_registration_batch
@@ -26,6 +26,13 @@ FIELD_LABELS = {
     "state_region": "State/Region", "city": "City", "postal_code": "ZIP/postal code", "phone_number": "Phone number", "email": "Email address",
     "country": "Country", "password": "Password or password-generation preference",
 }
+
+
+
+def field_label(field: str) -> str:
+    suffix = " (optional)" if field in OPTIONAL_PROFILE_FIELDS else ""
+    return f"{FIELD_LABELS[field]}{suffix}"
+
 
 PROFILE_EDIT_QUEUE_KEY = "profile_edit_queue"
 EDITING_FIELD_KEY = "editing_field"
@@ -113,21 +120,61 @@ async def on_text(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
         await apply_sites_upload(update, context, update.message.text)
         return
 
+    await save_profile_field_value(update, context, update.message.text)
+
+
+async def on_skip_optional(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    await save_profile_field_value(update, context, "skip")
+
+
+async def save_profile_field_value(update: Update, context: ContextTypes.DEFAULT_TYPE, raw_value: str) -> None:
     field = context.user_data.get(EDITING_FIELD_KEY)
     if not field:
         await update.message.reply_text("Use the menu to choose an action.", reply_markup=main_menu())
         return
     db: Database = context.application.bot_data["db"]
     profile = await db.get_profile(update.effective_user.id)
-    setattr(profile, field, update.message.text.strip())
+    value = raw_value.strip()
+    skipped = field in OPTIONAL_PROFILE_FIELDS and value.lower() in {"/skip", "skip", "omit", "none"}
+    if value.lower() in {"/skip", "skip", "omit", "none"} and field not in OPTIONAL_PROFILE_FIELDS:
+        await update.message.reply_text(f"{FIELD_LABELS[field]} is required for the default profile. Please send a value.")
+        return
+    setattr(profile, field, "" if skipped else value)
     await db.upsert_profile(profile)
 
     next_field = next_profile_edit_field(context)
+    action = "Skipped optional" if skipped else "Updated"
     if next_field:
-        await update.message.reply_text(f"Updated {FIELD_LABELS[field]}.\n\n{profile_field_prompt(next_field)}")
+        await update.message.reply_text(f"{action} {FIELD_LABELS[field]}.\n\n{profile_field_prompt(next_field)}")
         return
 
-    await update.message.reply_text(f"Updated {FIELD_LABELS[field]}. All profile fields are complete.", reply_markup=main_menu())
+    await update.message.reply_text(f"{action} {FIELD_LABELS[field]}. Profile update is complete.", reply_markup=main_menu())
+
+
+async def apply_sites_upload(update: Update, context: ContextTypes.DEFAULT_TYPE, payload: str) -> None:
+    config: AppConfig = context.application.bot_data["config"]
+    try:
+        sites = parse_sites_config_text(payload)
+    except (ConfigError, ValueError) as exc:
+        await update.message.reply_text(f"Website list was not accepted: {exc}", reply_markup=main_menu())
+        return
+    config.sites = sites
+    context.user_data.pop(SITES_UPLOAD_KEY, None)
+    await update.message.reply_text(f"Loaded {len(sites)} website(s). Only enabled, allowlisted sites can be automated.", reply_markup=main_menu())
+
+
+async def export_logs(query, context: ContextTypes.DEFAULT_TYPE, user_id: int) -> None:
+    db: Database = context.application.bot_data["db"]
+    payload = await db.export_logs_for_user(user_id)
+    with tempfile.NamedTemporaryFile("w", encoding="utf-8", suffix=".json", delete=False) as handle:
+        json.dump(payload, handle, indent=2)
+        path = Path(handle.name)
+    try:
+        with path.open("rb") as document:
+            await context.bot.send_document(query.message.chat_id, document=document, filename="registration-logs.json", caption="Registration logs export")
+        await query.edit_message_text("Exported logs.", reply_markup=main_menu())
+    finally:
+        path.unlink(missing_ok=True)
 
 
 async def apply_sites_upload(update: Update, context: ContextTypes.DEFAULT_TYPE, payload: str) -> None:
@@ -185,7 +232,8 @@ def next_profile_edit_field(context: ContextTypes.DEFAULT_TYPE) -> str | None:
 def profile_field_prompt(field: str) -> str:
     step_number = PROFILE_FIELDS.index(field) + 1
     total_steps = len(PROFILE_FIELDS)
-    return f"Send {FIELD_LABELS[field]} ({step_number}/{total_steps})."
+    optional_note = " Send 'skip' or /skip to leave this optional field blank." if field in OPTIONAL_PROFILE_FIELDS else ""
+    return f"Send {field_label(field)} ({step_number}/{total_steps}).{optional_note}"
 
 
 async def begin_registration(query, context: ContextTypes.DEFAULT_TYPE, site_key: str) -> None:
@@ -196,7 +244,7 @@ async def begin_registration(query, context: ContextTypes.DEFAULT_TYPE, site_key
     profile = await db.get_profile(query.from_user.id)
     missing = missing_required_fields(profile, [site])
     if missing:
-        await query.edit_message_text("Missing required profile fields: " + ", ".join(FIELD_LABELS[f] for f in missing), reply_markup=edit_profile_menu())
+        await query.edit_message_text("Missing required profile fields: " + ", ".join(field_label(f) for f in missing), reply_markup=edit_profile_menu())
         return
     await query.edit_message_text(f"Starting authorized registration helper for {site.name}. Final submit requires your approval.")
     result = await run_site_registration(query, context, site, profile)
@@ -216,7 +264,7 @@ async def begin_batch_registration(query, context: ContextTypes.DEFAULT_TYPE) ->
     validate_registration_batch(sites, requested_concurrency=concurrency)
     missing = missing_required_fields(profile, sites)
     if missing:
-        await query.edit_message_text("Missing required profile fields: " + ", ".join(FIELD_LABELS[f] for f in missing), reply_markup=edit_profile_menu())
+        await query.edit_message_text("Missing required profile fields: " + ", ".join(field_label(f) for f in missing), reply_markup=edit_profile_menu())
         return
     await query.edit_message_text(
         f"Starting registrations for {len(sites)} unique configured site(s), up to {concurrency} at a time. "
@@ -313,7 +361,7 @@ def format_profile(profile: UserProfile) -> str:
     lines = ["My Saved Info"]
     masked = profile.masked_dict()
     for field in PROFILE_FIELDS:
-        lines.append(f"{FIELD_LABELS[field]}: {masked[field]}")
+        lines.append(f"{field_label(field)}: {masked[field]}")
     return "\n".join(lines)
 
 
@@ -369,6 +417,7 @@ def build_application(config_path: str = "config.yaml") -> Application:
     app.bot_data.update({"config": config, "db": db, "analytics": AnalyticsService(config.database_path), "runner": runner})
     app.add_handler(CommandHandler("start", start))
     app.add_handler(CallbackQueryHandler(on_menu))
+    app.add_handler(CommandHandler("skip", on_skip_optional))
     app.add_handler(MessageHandler(filters.Document.ALL, on_document))
     app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, on_text))
     return app

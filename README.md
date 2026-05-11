@@ -13,6 +13,7 @@ This project is intentionally limited:
 - It can register one authorized user across multiple distinct configured sites, capped at 10 concurrent headless workers and 40 unique sites per batch.
 - It rejects duplicate site registrations in the same task and must not be used to create spam accounts.
 - Final Submit/Register is never clicked until the Telegram user approves the final screenshot for each site.
+- Address line 2, phone number, and password/preference are optional by default unless a site explicitly requires them.
 - Playwright inserts deliberate per-field and pre-submit delays and logs registration milestones.
 - Playwright runs in headless mode for safety and deployment consistency.
 - Optional proxy rotation is supported only through a configured, authorized proxy provider API; it must not be used to bypass CAPTCHA, rate limits, anti-bot controls, or access restrictions.
@@ -105,14 +106,14 @@ Allowed profile fields are:
 - `first_name`
 - `last_name`
 - `address_line1`
-- `address_line2`
+- `address_line2` (optional by default)
 - `state_region`
 - `city`
 - `postal_code`
-- `phone_number`
+- `phone_number` (optional by default)
 - `email`
 - `country`
-- `password` (or password-generation preference)
+- `password` (or password-generation preference; optional by default)
 
 ## Telegram menu
 
@@ -120,7 +121,7 @@ The main menu uses inline keyboards and supports text/document upload for websit
 
 - **Start Registration**: choose a configured site, confirm required profile info, run Playwright, pause for manual verification if needed, approve final submission.
 - **Register on All Sites**: registers the same user across enabled, not-yet-successful configured sites, using up to 10 concurrent headless workers and stopping after 40 unique sites. Each site still pauses for CAPTCHA/manual verification and requires final approval before submit.
-- **Add/Update Profile**: collects profile fields through a menu-based workflow.
+- **Add/Update Profile**: collects profile fields through a menu-based workflow; optional fields can be skipped by sending `skip` or `/skip`.
 - **My Saved Info**: displays stored profile fields with sensitive values masked.
 - **Upload/Edit Website List**: accepts an authorized `sites.yaml`/`sites.json` payload at runtime.
 - **Registration Status**: shows recent attempts for the Telegram user.

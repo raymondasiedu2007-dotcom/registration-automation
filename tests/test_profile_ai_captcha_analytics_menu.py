@@ -14,23 +14,22 @@ from app.models import AttemptStatus, UserProfile
 def test_user_profile_validation():
     profile = UserProfile(telegram_user_id=1, first_name="Ada")
     assert "last_name" in profile.missing_required_fields()
+    assert "address_line2" not in profile.missing_required_fields()
     assert not profile.is_complete()
     complete = UserProfile(
         telegram_user_id=1,
         first_name="Ada",
         last_name="Lovelace",
         address_line1="1 Algorithm Ave",
-        address_line2="Unit 2",
         state_region="CA",
         city="San Francisco",
         postal_code="94105",
-        phone_number="5551234567",
         email="ada@example.com",
         country="US",
-        password="use-generated-password",
     )
     assert complete.is_complete()
     assert complete.masked_dict()["email"].startswith("ad***@")
+    assert complete.missing_required_fields(["phone_number"]) == ["phone_number"]
 
 
 def test_ai_json_parsing_accepts_valid_mapping():
@@ -131,6 +130,14 @@ def test_profile_edit_sequence_advances_through_fields():
     assert EDITING_FIELD_KEY not in context.user_data
     assert PROFILE_EDIT_QUEUE_KEY not in context.user_data
     assert remaining_profile_fields_after(PROFILE_FIELDS[-1]) == []
+
+
+def test_profile_prompt_marks_optional_fields_as_skippable():
+    from app.bot import profile_field_prompt
+
+    assert "optional" in profile_field_prompt("address_line2")
+    assert "skip" in profile_field_prompt("password")
+    assert "skip" not in profile_field_prompt("first_name")
 
 
 def test_proxy_response_parsing_accepts_text_and_json_formats():

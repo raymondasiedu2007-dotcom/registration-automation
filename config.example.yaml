@@ -34,14 +34,13 @@ sites:
       - first_name
       - last_name
       - address_line1
-      - address_line2
       - state_region
       - city
       - postal_code
-      - phone_number
       - email
       - country
-      - password
+    # Optional fields such as address_line2, phone_number, and password can be added
+    # to required_profile_fields if a site requires them.
     submit_selector: "button[type='submit']"
     field_mappings:
       first_name: "#firstName"

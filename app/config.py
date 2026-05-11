@@ -8,7 +8,7 @@ from urllib.parse import urlparse
 
 from app.yaml_compat import safe_load
 
-from app.models import PROFILE_FIELDS, SiteConfig
+from app.models import PROFILE_FIELDS, REQUIRED_PROFILE_FIELDS, SiteConfig
 from app.proxy import ProxyRotationConfig, load_proxy_rotation_config
 
 
@@ -82,7 +82,7 @@ def _parse_sites(raw_sites: dict[str, Any] | list[dict[str, Any]]) -> dict[str, 
             raise ConfigError(f"Site {key} has invalid registration_url")
         if parsed.hostname and parsed.hostname.lower().rstrip(".") != domain and not parsed.hostname.lower().rstrip(".").endswith(f".{domain}"):
             raise ConfigError(f"Site {key} URL host must match configured domain")
-        required = raw.get("required_profile_fields") or PROFILE_FIELDS.copy()
+        required = raw.get("required_profile_fields") or REQUIRED_PROFILE_FIELDS.copy()
         invalid_fields = set(required) - set(PROFILE_FIELDS)
         if invalid_fields:
             raise ConfigError(f"Site {key} has invalid profile fields: {sorted(invalid_fields)}")

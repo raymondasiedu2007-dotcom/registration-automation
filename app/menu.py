@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from telegram import InlineKeyboardButton, InlineKeyboardMarkup
 
-from app.models import PROFILE_FIELDS
+from app.models import OPTIONAL_PROFILE_FIELDS, PROFILE_FIELDS
 
 CALLBACK_MAIN = "main"
 CALLBACK_REGISTER = "register"
@@ -50,7 +50,7 @@ def edit_profile_menu() -> InlineKeyboardMarkup:
         "country": "Country",
         "password": "Password/preference",
     }
-    rows = [[InlineKeyboardButton(labels[field], callback_data=f"edit:{field}")] for field in PROFILE_FIELDS]
+    rows = [[InlineKeyboardButton(labels[field] + (" (optional)" if field in OPTIONAL_PROFILE_FIELDS else ""), callback_data=f"edit:{field}")] for field in PROFILE_FIELDS]
     rows.append([InlineKeyboardButton("Back", callback_data=CALLBACK_MAIN)])
     return InlineKeyboardMarkup(rows)
 
