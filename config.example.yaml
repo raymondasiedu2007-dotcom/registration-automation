@@ -9,13 +9,17 @@ playwright:
 proxy_rotation:
   enabled: false
   # Optional: fetch one fresh proxy per Playwright browser launch from an authorized proxy provider API.
-  # The API may return plain text like "http://user:pass@host:port" or JSON with either
+  # Generic APIs may return plain text like "http://user:pass@host:port" or JSON with either
   # {"proxy":"http://user:pass@host:port"} / {"server":"http://host:port","username":"user","password":"pass"}.
-  api_url: "${PROXY_API_URL}"
+  # Set provider to "9proxy" to call the 9Proxy API with num=1&t=2 by default and parse {"data":["host:port"]}.
+  provider: "generic" # or "9proxy"
+  api_url: "${PROXY_API_URL}" # optional for 9proxy; defaults to https://api.9proxy.com/api/proxy
   api_key: "${PROXY_API_KEY}"
-  api_key_header: "Authorization"
-  api_key_prefix: "Bearer"
-  proxy_json_path: "proxy"
+  api_key_header: "Authorization" # defaults to "api-key" for 9proxy
+  api_key_prefix: "Bearer" # defaults to empty for 9proxy
+  proxy_json_path: "proxy" # defaults to "data.0" for 9proxy
+  proxy_scheme: "http"
+  request_params: {} # for 9proxy, add filters such as country, state, city, zip, isp, plan, today, or ports
   timeout_seconds: 10
 ai:
   enabled: false
