@@ -140,6 +140,38 @@ def test_profile_prompt_marks_optional_fields_as_skippable():
     assert "skip" not in profile_field_prompt("first_name")
 
 
+def test_bot_conflict_error_handler_stops_polling():
+    from types import SimpleNamespace
+
+    from telegram.error import Conflict
+
+    from app.bot import on_bot_error
+
+    class FakeApplication:
+        def __init__(self):
+            self.stopped = False
+
+        def stop_running(self):
+            self.stopped = True
+
+    application = FakeApplication()
+    context = SimpleNamespace(error=Conflict("terminated by other getUpdates request"), application=application)
+
+    asyncio.run(on_bot_error(None, context))
+
+    assert application.stopped
+
+
+def test_bot_instance_lock_rejects_duplicate_local_process(tmp_path: Path):
+    from app.bot import BotInstanceLock
+
+    lock_path = tmp_path / "bot.lock"
+    with BotInstanceLock(lock_path):
+        with pytest.raises(RuntimeError, match="Another local bot process"):
+            with BotInstanceLock(lock_path):
+                pass
+
+
 def test_proxy_response_parsing_accepts_text_and_json_formats():
     from app.proxy import parse_proxy_response
 

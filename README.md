@@ -71,6 +71,10 @@ README.md
    python -m app.bot
    ```
 
+   Only one polling process can run for a Telegram bot token. The bot creates a local lock file
+   at `/tmp/registration-automation-bot.lock` by default; set `BOT_LOCK_FILE` to override the
+   path when needed.
+
 ## Telegram bot token setup
 
 1. Open Telegram and chat with `@BotFather`.
@@ -81,7 +85,16 @@ README.md
    TELEGRAM_BOT_TOKEN=123456:your_token
    ```
 
-The bot reads `TELEGRAM_BOT_TOKEN` from the environment first, then from `config.yaml`.
+The bot reads `TELEGRAM_BOT_TOKEN` from the environment first, then from `config.yaml`. Keep
+this token secret. If it is exposed in logs, chat, screenshots, or source control, revoke it in
+BotFather and generate a replacement token before restarting the bot.
+
+## Troubleshooting polling conflicts
+
+Telegram returns `409 Conflict: terminated by other getUpdates request` when more than one
+process, service, container, or host uses long polling with the same bot token. Stop the other
+instance before starting this bot again. The application now handles that conflict by logging a
+clear message and shutting down instead of repeatedly printing stack traces.
 
 ## Config file example
 
