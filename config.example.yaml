@@ -40,8 +40,12 @@ sites:
       - postal_code
       - phone_number
       - email
+      - country
+      - password
     submit_selector: "button[type='submit']"
     field_mappings:
-      "#firstName": "first_name"
-      "#lastName": "last_name"
-      "#email": "email"
+      first_name: "#firstName"
+      last_name: "#lastName"
+      email: "#email"
+      country: "#country"
+      password: "#password"

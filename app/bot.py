@@ -1,7 +1,9 @@
 from __future__ import annotations
 
 import asyncio
+import json
 import os
+import tempfile
 from pathlib import Path
 
 from dotenv import load_dotenv
@@ -10,8 +12,9 @@ from telegram.ext import Application, CallbackQueryHandler, CommandHandler, Cont
 
 from app.ai_mapper import AIFormMapper
 from app.analytics import AnalyticsService, format_analytics
-from app.config import AppConfig, load_config
+from app.config import AppConfig, ConfigError, load_config, parse_sites_config_text
 from app.database import Database
+from app.logging_config import configure_logging
 from app.menu import approval_menu, continue_menu, edit_profile_menu, main_menu, sites_menu
 from app.models import AttemptStatus, PROFILE_FIELDS, SiteConfig, UserProfile
 from app.playwright_runner import PlaywrightRegistrationRunner
@@ -21,10 +24,12 @@ from app.safety import MAX_CONCURRENT_REGISTRATIONS, MAX_CONFIGURED_UNIQUE_SITES
 FIELD_LABELS = {
     "first_name": "First name", "last_name": "Last name", "address_line1": "Address line 1", "address_line2": "Address line 2",
     "state_region": "State/Region", "city": "City", "postal_code": "ZIP/postal code", "phone_number": "Phone number", "email": "Email address",
+    "country": "Country", "password": "Password or password-generation preference",
 }
 
 PROFILE_EDIT_QUEUE_KEY = "profile_edit_queue"
 EDITING_FIELD_KEY = "editing_field"
+SITES_UPLOAD_KEY = "awaiting_sites_upload"
 
 
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
@@ -63,8 +68,15 @@ async def on_menu(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
         await query.edit_message_text(profile_field_prompt(field))
     elif data == "sites":
         await query.edit_message_text(format_sites(config.sites), reply_markup=main_menu())
+    elif data == "upload_sites":
+        context.user_data[SITES_UPLOAD_KEY] = True
+        await query.edit_message_text(upload_sites_prompt())
+    elif data == "status":
+        await query.edit_message_text(format_registration_status(await db.recent_attempts_for_user(user_id)), reply_markup=main_menu())
     elif data == "analytics":
         await query.edit_message_text(format_analytics(await analytics.summary()), reply_markup=main_menu())
+    elif data == "export_logs":
+        await export_logs(query, context, user_id)
     elif data == "settings":
         await query.edit_message_text("Settings: AI mapping and site allowlists are managed in config.yaml.", reply_markup=main_menu())
     elif data == "help":
@@ -83,7 +95,24 @@ async def on_menu(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
         await query.edit_message_text("Continuing after manual action...")
 
 
+async def on_document(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    if not context.user_data.get(SITES_UPLOAD_KEY):
+        await update.message.reply_text("Use Upload/Edit Website List before sending a sites file.", reply_markup=main_menu())
+        return
+    document = update.message.document
+    if not document:
+        await update.message.reply_text("No document found.", reply_markup=main_menu())
+        return
+    telegram_file = await document.get_file()
+    payload = bytes(await telegram_file.download_as_bytearray()).decode("utf-8")
+    await apply_sites_upload(update, context, payload)
+
+
 async def on_text(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    if context.user_data.get(SITES_UPLOAD_KEY):
+        await apply_sites_upload(update, context, update.message.text)
+        return
+
     field = context.user_data.get(EDITING_FIELD_KEY)
     if not field:
         await update.message.reply_text("Use the menu to choose an action.", reply_markup=main_menu())
@@ -99,6 +128,32 @@ async def on_text(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
         return
 
     await update.message.reply_text(f"Updated {FIELD_LABELS[field]}. All profile fields are complete.", reply_markup=main_menu())
+
+
+async def apply_sites_upload(update: Update, context: ContextTypes.DEFAULT_TYPE, payload: str) -> None:
+    config: AppConfig = context.application.bot_data["config"]
+    try:
+        sites = parse_sites_config_text(payload)
+    except (ConfigError, ValueError) as exc:
+        await update.message.reply_text(f"Website list was not accepted: {exc}", reply_markup=main_menu())
+        return
+    config.sites = sites
+    context.user_data.pop(SITES_UPLOAD_KEY, None)
+    await update.message.reply_text(f"Loaded {len(sites)} website(s). Only enabled, allowlisted sites can be automated.", reply_markup=main_menu())
+
+
+async def export_logs(query, context: ContextTypes.DEFAULT_TYPE, user_id: int) -> None:
+    db: Database = context.application.bot_data["db"]
+    payload = await db.export_logs_for_user(user_id)
+    with tempfile.NamedTemporaryFile("w", encoding="utf-8", suffix=".json", delete=False) as handle:
+        json.dump(payload, handle, indent=2)
+        path = Path(handle.name)
+    try:
+        with path.open("rb") as document:
+            await context.bot.send_document(query.message.chat_id, document=document, filename="registration-logs.json", caption="Registration logs export")
+        await query.edit_message_text("Exported logs.", reply_markup=main_menu())
+    finally:
+        path.unlink(missing_ok=True)
 
 
 async def start_profile_edit_sequence(query, context: ContextTypes.DEFAULT_TYPE) -> None:
@@ -265,22 +320,43 @@ def format_profile(profile: UserProfile) -> str:
 def format_sites(sites: dict) -> str:
     lines = ["Supported Sites"]
     for site in sites.values():
-        status = "enabled" if site.enabled else "disabled"
-        lines.append(f"• {site.name}: {site.domain} — {site.registration_url} ({status})")
+        enabled = "enabled" if site.enabled else "disabled"
+        notes = f" — {site.notes}" if site.notes else ""
+        lines.append(f"• {site.name}: {site.domain} — {site.registration_url} ({enabled}; status={site.status}){notes}")
     return "\n".join(lines)
+
+
+def format_registration_status(attempts: list[dict[str, object]]) -> str:
+    if not attempts:
+        return "No registration attempts yet."
+    lines = ["Recent registration status"]
+    for attempt in attempts:
+        completed = attempt.get("completed_at") or "in progress"
+        failure = f" — {attempt['failure_reason']}" if attempt.get("failure_reason") else ""
+        lines.append(f"• {attempt['site_key']}: {attempt['status']} ({completed}){failure}")
+    return "\n".join(lines)
+
+
+def upload_sites_prompt() -> str:
+    return (
+        "Send or upload a sites.yaml/sites.json payload with a top-level sites list or object. "
+        "Each site needs name, signup_url (or registration_url), and optional field_mappings, notes, and status. "
+        "Only include sites where you are allowed to create your own account."
+    )
 
 
 def help_text() -> str:
     return (
         "This bot assists with authorized registration only on domains listed in config.yaml. "
         "It can register one user across unique configured sites with up to 10 concurrent headless workers. "
-        "It will not bypass CAPTCHA, anti-bot checks, email/phone verification, rate limits, or access controls. "
-        "You must manually complete verification and approve each final submission."
+        "It will not bypass CAPTCHA, MFA, anti-bot checks, email/phone verification, rate limits, or access controls. "
+        "Automation uses deliberate delays. You must manually complete verification and approve each final submission."
     )
 
 
 def build_application(config_path: str = "config.yaml") -> Application:
     load_dotenv()
+    configure_logging(os.getenv("LOG_LEVEL", "INFO"))
     config = load_config(config_path)
     token = config.telegram_token or os.getenv("TELEGRAM_BOT_TOKEN")
     if not token:
@@ -293,6 +369,7 @@ def build_application(config_path: str = "config.yaml") -> Application:
     app.bot_data.update({"config": config, "db": db, "analytics": AnalyticsService(config.database_path), "runner": runner})
     app.add_handler(CommandHandler("start", start))
     app.add_handler(CallbackQueryHandler(on_menu))
+    app.add_handler(MessageHandler(filters.Document.ALL, on_document))
     app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, on_text))
     return app
 

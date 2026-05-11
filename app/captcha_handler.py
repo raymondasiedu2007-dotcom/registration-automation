@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-CAPTCHA_KEYWORDS = ("captcha", "recaptcha", "hcaptcha", "turnstile", "verification code", "verify you are human")
+CAPTCHA_KEYWORDS = ("captcha", "recaptcha", "hcaptcha", "turnstile", "verification code", "verify you are human", "multi-factor", "mfa", "one-time code", "email verification", "verify your email", "phone verification", "rate limit", "too many requests", "bot detection", "suspicious activity")
 CAPTCHA_SELECTORS = [
     "iframe[src*='recaptcha']",
     "iframe[src*='hcaptcha']",
@@ -9,6 +9,8 @@ CAPTCHA_SELECTORS = [
     ".h-captcha",
     "[data-sitekey]",
     "input[name*='captcha' i]",
+    "input[name*='otp' i]",
+    "input[name*='verification' i]",
 ]
 
 

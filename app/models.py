@@ -16,9 +16,11 @@ PROFILE_FIELDS = [
     "postal_code",
     "phone_number",
     "email",
+    "country",
+    "password",
 ]
 
-SENSITIVE_FIELDS = {"phone_number", "email", "address_line1", "address_line2"}
+SENSITIVE_FIELDS = {"phone_number", "email", "address_line1", "address_line2", "password"}
 
 
 class AttemptStatus(str, Enum):
@@ -41,6 +43,8 @@ class UserProfile:
     postal_code: str = ""
     phone_number: str = ""
     email: str = ""
+    country: str = ""
+    password: str = ""
 
     def missing_required_fields(self) -> list[str]:
         return [field_name for field_name in PROFILE_FIELDS if not getattr(self, field_name, "").strip()]
@@ -66,6 +70,8 @@ class SiteConfig:
     required_profile_fields: list[str] = field(default_factory=lambda: PROFILE_FIELDS.copy())
     submit_selector: str | None = None
     field_mappings: dict[str, str] = field(default_factory=dict)
+    notes: str = ""
+    status: str = "active"
 
 
 @dataclass(slots=True)
@@ -100,6 +106,8 @@ def mask_value(field_name: str, value: str) -> str:
     if field_name == "email" and "@" in value:
         prefix, domain = value.split("@", 1)
         return f"{prefix[:2]}***@{domain}"
+    if field_name == "password":
+        return "********"
     if field_name == "phone_number":
         digits = "".join(ch for ch in value if ch.isdigit())
         return f"***-***-{digits[-4:]}" if len(digits) >= 4 else "***"
