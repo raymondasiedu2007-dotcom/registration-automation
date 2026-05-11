@@ -21,13 +21,39 @@ proxy_rotation:
   proxy_scheme: "http"
   request_params: {} # for 9proxy, add filters such as country, state, city, zip, isp, plan, today, or ports
   timeout_seconds: 10
+
+# AI Configuration
+# Two modes available:
+# 1. Single model mode (legacy) - uses one model (kimi or qwen)
+# 2. Concurrent mode - uses both kimi and qwen simultaneously and merges results
 ai:
   enabled: false
-  provider: "kimi" # or qwen
-  base_url: "https://api.moonshot.ai/v1" # example OpenAI-compatible endpoint
-  api_key: "${AI_API_KEY}"
-  model: "kimi-k2"
+  
+  # Uncomment to use single model mode (backward compatible)
+  # provider: "openai-compatible"
+  # base_url: "https://api.moonshot.ai/v1"
+  # api_key: "${AI_API_KEY}"
+  # model: "kimi-k2"
+  # confidence_threshold: 0.8
+  
+  # Uncomment to use concurrent mode (kimi + qwen)
+  concurrent: false  # Set to true to enable concurrent mode
+  merge_strategy: "average"  # Options: "average" (default), "highest", "consensus"
+  
+  # Kimi configuration (https://platform.moonshot.ai/)
+  kimi:
+    base_url: "https://api.moonshot.ai/v1"
+    api_key: "${KIMI_API_KEY}"
+    model: "kimi-k2"
+  
+  # Qwen configuration (https://dashscope.aliyuncs.com/)
+  qwen:
+    base_url: "https://dashscope.aliyuncs.com/compatible-mode/v1"
+    api_key: "${QWEN_API_KEY}"
+    model: "qwen-plus"
+  
   confidence_threshold: 0.8
+
 sites:
   example_site:
     name: "Example Authorized Site"
