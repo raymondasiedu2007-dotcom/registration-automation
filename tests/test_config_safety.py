@@ -69,6 +69,27 @@ sites:
     assert site.required_profile_fields == ["email", "phone_number", "password"]
 
 
+def test_uploaded_sites_yaml_accepts_signup_url_and_profile_to_selector_mappings():
+    sites = parse_sites_config_text(
+        """
+sites:
+  - name: Example Site
+    signup_url: https://example.com/signup
+    notes: Allowed by terms
+    status: active
+    field_mappings:
+      first_name: input[name='first_name']
+      last_name: input[name='last_name']
+      email: input[type='email']
+"""
+    )
+    site = sites["example_site"]
+    assert site.domain == "example.com"
+    assert site.registration_url == "https://example.com/signup"
+    assert site.notes == "Allowed by terms"
+    assert site.field_mappings["input[name='first_name']"] == "first_name"
+
+
 def test_config_rejects_registration_url_outside_domain(tmp_path: Path):
     config_file = tmp_path / "config.yaml"
     config_file.write_text(

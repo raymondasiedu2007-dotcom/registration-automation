@@ -177,6 +177,32 @@ async def export_logs(query, context: ContextTypes.DEFAULT_TYPE, user_id: int) -
         path.unlink(missing_ok=True)
 
 
+async def apply_sites_upload(update: Update, context: ContextTypes.DEFAULT_TYPE, payload: str) -> None:
+    config: AppConfig = context.application.bot_data["config"]
+    try:
+        sites = parse_sites_config_text(payload)
+    except (ConfigError, ValueError) as exc:
+        await update.message.reply_text(f"Website list was not accepted: {exc}", reply_markup=main_menu())
+        return
+    config.sites = sites
+    context.user_data.pop(SITES_UPLOAD_KEY, None)
+    await update.message.reply_text(f"Loaded {len(sites)} website(s). Only enabled, allowlisted sites can be automated.", reply_markup=main_menu())
+
+
+async def export_logs(query, context: ContextTypes.DEFAULT_TYPE, user_id: int) -> None:
+    db: Database = context.application.bot_data["db"]
+    payload = await db.export_logs_for_user(user_id)
+    with tempfile.NamedTemporaryFile("w", encoding="utf-8", suffix=".json", delete=False) as handle:
+        json.dump(payload, handle, indent=2)
+        path = Path(handle.name)
+    try:
+        with path.open("rb") as document:
+            await context.bot.send_document(query.message.chat_id, document=document, filename="registration-logs.json", caption="Registration logs export")
+        await query.edit_message_text("Exported logs.", reply_markup=main_menu())
+    finally:
+        path.unlink(missing_ok=True)
+
+
 async def start_profile_edit_sequence(query, context: ContextTypes.DEFAULT_TYPE) -> None:
     context.user_data[PROFILE_EDIT_QUEUE_KEY] = list(PROFILE_FIELDS[1:])
     context.user_data[EDITING_FIELD_KEY] = PROFILE_FIELDS[0]
