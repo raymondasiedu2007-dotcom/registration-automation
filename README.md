@@ -13,7 +13,9 @@ This project is intentionally limited:
 - It can register one authorized user across multiple distinct configured sites, capped at 10 concurrent headless workers and 40 unique sites per batch.
 - It rejects duplicate site registrations in the same task and must not be used to create spam accounts.
 - Final Submit/Register is never clicked until the Telegram user approves the final screenshot for each site.
+- Playwright inserts deliberate per-field and pre-submit delays and logs registration milestones.
 - Playwright runs in headless mode for safety and deployment consistency.
+- Optional proxy rotation is supported only through a configured, authorized proxy provider API; it must not be used to bypass CAPTCHA, rate limits, anti-bot controls, or access restrictions.
 
 ## Project structure
 
@@ -86,16 +88,16 @@ Only add domains where you are authorized to run assisted registration.
 
 ```yaml
 sites:
-  example_site:
-    name: "Example Authorized Site"
-    domain: "example.com"
-    registration_url: "https://example.com/register"
-    enabled: true
+  - name: "Example Authorized Site"
+    signup_url: "https://example.com/register"
+    status: "active"
+    notes: "Only use with authorization and according to site terms."
     submit_selector: "button[type='submit']"
     field_mappings:
-      "#firstName": "first_name"
-      "#lastName": "last_name"
-      "#email": "email"
+      first_name: "#firstName"
+      last_name: "#lastName"
+      email: "input[type='email']"
+      password: "input[type='password']"
 ```
 
 Allowed profile fields are:
@@ -109,15 +111,21 @@ Allowed profile fields are:
 - `postal_code`
 - `phone_number`
 - `email`
+- `country`
+- `password` (or password-generation preference)
 
 ## Telegram menu
 
-The main menu uses inline keyboards:
+The main menu uses inline keyboards and supports text/document upload for website lists:
 
-- **Register on Site**: choose a configured site, confirm required profile info, run Playwright, pause for manual verification if needed, approve final submission.
+- **Start Registration**: choose a configured site, confirm required profile info, run Playwright, pause for manual verification if needed, approve final submission.
 - **Register on All Sites**: registers the same user across enabled, not-yet-successful configured sites, using up to 10 concurrent headless workers and stopping after 40 unique sites. Each site still pauses for CAPTCHA/manual verification and requires final approval before submit.
+- **Add/Update Profile**: collects profile fields through a menu-based workflow.
 - **My Saved Info**: displays stored profile fields with sensitive values masked.
-- **Edit My Info**: edit first name, last name, address lines, state/region, city, ZIP/postal code, phone number, and email individually.
+- **Upload/Edit Website List**: accepts an authorized `sites.yaml`/`sites.json` payload at runtime.
+- **Registration Status**: shows recent attempts for the Telegram user.
+- **Export Logs**: exports the user's attempts and error logs as JSON.
+- **Edit My Info**: edit first name, last name, address lines, state/region, city, ZIP/postal code, country, phone number, email, and password/preference individually.
 - **Supported Sites**: lists configured sites with domain, registration URL, and enabled/disabled status.
 - **Analytics**: shows attempts, successes, failures, manual interventions, most-used site, last attempt, average duration, and failure reasons.
 - **Settings**: explains config-managed settings.
@@ -139,6 +147,30 @@ Before any submit/register click, the bot sends a screenshot with:
 > Approve final submission?
 
 The submit button is clicked only after **Approve final submission** is pressed for that site. In a multi-site batch, each site sends its own screenshot and approval button. Cancelling resolves pending approvals as rejected and stops submissions that have not already been approved.
+
+
+## Optional proxy rotation API
+
+Proxy rotation can be enabled when you have authorization to use a proxy provider for the configured sites. When enabled, the runner calls the configured API once per Playwright browser launch and passes the returned proxy to Chromium. This feature does not bypass CAPTCHA, verification, rate limits, or access controls; those safety pauses and final approval still apply.
+
+```yaml
+proxy_rotation:
+  enabled: true
+  api_url: "${PROXY_API_URL}"
+  api_key: "${PROXY_API_KEY}"
+  api_key_header: "Authorization"
+  api_key_prefix: "Bearer"
+  proxy_json_path: "proxy"
+  timeout_seconds: 10
+```
+
+Supported API responses:
+
+- Plain text proxy URL: `http://user:pass@proxy.example:8080`
+- JSON proxy URL: `{ "proxy": "socks5://proxy.example:1080" }`
+- JSON Playwright-style fields: `{ "server": "http://proxy.example:8080", "username": "user", "password": "pass" }`
+
+Proxy URLs must include an `http`, `https`, `socks4`, or `socks5` scheme plus host and port. Set `proxy_json_path` to a dotted path such as `data.proxy` for nested JSON responses.
 
 ## Optional Kimi/Qwen AI mapping
 
