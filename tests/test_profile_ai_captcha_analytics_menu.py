@@ -129,3 +129,21 @@ def test_profile_edit_sequence_advances_through_fields():
     assert EDITING_FIELD_KEY not in context.user_data
     assert PROFILE_EDIT_QUEUE_KEY not in context.user_data
     assert remaining_profile_fields_after(PROFILE_FIELDS[-1]) == []
+
+
+def test_proxy_response_parsing_accepts_text_and_json_formats():
+    from app.proxy import parse_proxy_response
+
+    assert parse_proxy_response("http://user:pass@proxy.example:8080") == {
+        "server": "http://proxy.example:8080",
+        "username": "user",
+        "password": "pass",
+    }
+    assert parse_proxy_response('{"data":{"proxy":"socks5://proxy.example:1080"}}', "application/json", "data.proxy") == {
+        "server": "socks5://proxy.example:1080"
+    }
+    assert parse_proxy_response('{"server":"https://proxy.example:8443","username":"u","password":"p"}', "application/json") == {
+        "server": "https://proxy.example:8443",
+        "username": "u",
+        "password": "p",
+    }

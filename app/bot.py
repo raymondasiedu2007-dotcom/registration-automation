@@ -15,6 +15,7 @@ from app.database import Database
 from app.menu import approval_menu, continue_menu, edit_profile_menu, main_menu, sites_menu
 from app.models import AttemptStatus, PROFILE_FIELDS, SiteConfig, UserProfile
 from app.playwright_runner import PlaywrightRegistrationRunner
+from app.proxy import ProxyRotator
 from app.safety import MAX_CONCURRENT_REGISTRATIONS, MAX_CONFIGURED_UNIQUE_SITES, validate_registration_batch
 
 FIELD_LABELS = {
@@ -287,7 +288,8 @@ def build_application(config_path: str = "config.yaml") -> Application:
     app = Application.builder().token(token).build()
     db = Database(config.database_path)
     ai_mapper = AIFormMapper(config.ai)
-    runner = PlaywrightRegistrationRunner(config.screenshots_dir, headless=config.playwright_headless, ai_mapper=ai_mapper)
+    proxy_rotator = ProxyRotator(config.proxy_rotation)
+    runner = PlaywrightRegistrationRunner(config.screenshots_dir, headless=config.playwright_headless, ai_mapper=ai_mapper, proxy_rotator=proxy_rotator)
     app.bot_data.update({"config": config, "db": db, "analytics": AnalyticsService(config.database_path), "runner": runner})
     app.add_handler(CommandHandler("start", start))
     app.add_handler(CallbackQueryHandler(on_menu))

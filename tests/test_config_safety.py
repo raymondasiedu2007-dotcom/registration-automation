@@ -82,3 +82,34 @@ def test_registration_batch_rejects_duplicate_sites_and_too_much_concurrency():
     with pytest.raises(SafetyError):
         validate_registration_batch([site, site], requested_concurrency=1)
     validate_registration_batch([site], requested_concurrency=1)
+
+
+def test_proxy_rotation_config_parses_api_settings(tmp_path: Path, monkeypatch: pytest.MonkeyPatch):
+    monkeypatch.setenv("PROXY_API_KEY", "secret-token")
+    config_file = tmp_path / "config.yaml"
+    config_file.write_text(
+        """
+proxy_rotation:
+  enabled: true
+  api_url: https://proxy-provider.example/next
+  api_key: ${PROXY_API_KEY}
+  api_key_header: X-API-Key
+  api_key_prefix: ""
+  proxy_json_path: data.proxy
+  timeout_seconds: 5
+sites:
+  demo:
+    name: Demo
+    domain: example.com
+    registration_url: https://example.com/register
+""",
+        encoding="utf-8",
+    )
+    config = load_config(config_file)
+    assert config.proxy_rotation.enabled is True
+    assert config.proxy_rotation.api_url == "https://proxy-provider.example/next"
+    assert config.proxy_rotation.api_key == "secret-token"
+    assert config.proxy_rotation.api_key_header == "X-API-Key"
+    assert config.proxy_rotation.api_key_prefix == ""
+    assert config.proxy_rotation.proxy_json_path == "data.proxy"
+    assert config.proxy_rotation.timeout_seconds == 5

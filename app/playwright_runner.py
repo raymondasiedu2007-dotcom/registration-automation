@@ -11,6 +11,7 @@ from app.ai_mapper import AIFormMapper
 from app.captcha_handler import detect_captcha_or_verification
 from app.form_extractor import extract_form_fields
 from app.models import FieldMetadata, SiteConfig, UserProfile
+from app.proxy import ProxyRotator
 from app.safety import SafetyError, validate_allowed_url
 
 ManualCallback = Callable[[str, str], Awaitable[None]]
@@ -31,10 +32,17 @@ KEYWORD_MAP = {
 
 
 class PlaywrightRegistrationRunner:
-    def __init__(self, screenshots_dir: str = "screenshots", headless: bool = True, ai_mapper: AIFormMapper | None = None) -> None:
+    def __init__(
+        self,
+        screenshots_dir: str = "screenshots",
+        headless: bool = True,
+        ai_mapper: AIFormMapper | None = None,
+        proxy_rotator: ProxyRotator | None = None,
+    ) -> None:
         self.screenshots_dir = Path(screenshots_dir)
         self.headless = headless
         self.ai_mapper = ai_mapper
+        self.proxy_rotator = proxy_rotator
         self.screenshots_dir.mkdir(parents=True, exist_ok=True)
 
     async def run(
@@ -47,7 +55,12 @@ class PlaywrightRegistrationRunner:
         validate_allowed_url(site.registration_url, site)
         manual_interventions = 0
         async with async_playwright() as playwright:
-            browser = await playwright.chromium.launch(headless=self.headless)
+            launch_options: dict[str, object] = {"headless": self.headless}
+            if self.proxy_rotator and self.proxy_rotator.enabled:
+                proxy = await self.proxy_rotator.next_proxy()
+                if proxy:
+                    launch_options["proxy"] = proxy
+            browser = await playwright.chromium.launch(**launch_options)
             page = await browser.new_page()
             try:
                 page.on("framenavigated", lambda frame: validate_allowed_url(frame.url, site) if frame == page.main_frame and frame.url != "about:blank" else None)
