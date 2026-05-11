@@ -37,6 +37,7 @@ def field_label(field: str) -> str:
 PROFILE_EDIT_QUEUE_KEY = "profile_edit_queue"
 EDITING_FIELD_KEY = "editing_field"
 SITES_UPLOAD_KEY = "awaiting_sites_upload"
+USER_SITE_UPLOADS_KEY = "user_site_uploads"
 
 
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
@@ -46,7 +47,6 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
 async def on_menu(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     query = update.callback_query
     await query.answer()
-    config: AppConfig = context.application.bot_data["config"]
     db: Database = context.application.bot_data["db"]
     analytics: AnalyticsService = context.application.bot_data["analytics"]
     user_id = query.from_user.id
@@ -55,7 +55,7 @@ async def on_menu(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     if data == "main":
         await query.edit_message_text("Main Menu", reply_markup=main_menu())
     elif data == "register":
-        await query.edit_message_text("Select a configured site:", reply_markup=sites_menu(config.sites))
+        await query.edit_message_text("Select a configured site:", reply_markup=sites_menu(sites_for_user(context, user_id)))
     elif data == "register_all":
         await begin_batch_registration(query, context)
     elif data.startswith("site:"):
@@ -74,7 +74,7 @@ async def on_menu(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
         context.user_data[EDITING_FIELD_KEY] = field
         await query.edit_message_text(profile_field_prompt(field))
     elif data == "sites":
-        await query.edit_message_text(format_sites(config.sites), reply_markup=main_menu())
+        await query.edit_message_text(format_sites(sites_for_user(context, user_id)), reply_markup=main_menu())
     elif data == "upload_sites":
         context.user_data[SITES_UPLOAD_KEY] = True
         await query.edit_message_text(upload_sites_prompt())
@@ -152,41 +152,18 @@ async def save_profile_field_value(update: Update, context: ContextTypes.DEFAULT
 
 
 async def apply_sites_upload(update: Update, context: ContextTypes.DEFAULT_TYPE, payload: str) -> None:
-    config: AppConfig = context.application.bot_data["config"]
     try:
         sites = parse_sites_config_text(payload)
     except (ConfigError, ValueError) as exc:
         await update.message.reply_text(f"Website list was not accepted: {exc}", reply_markup=main_menu())
         return
-    config.sites = sites
+    user_id = update.effective_user.id
+    uploaded_sites_by_user(context)[user_id] = sites
     context.user_data.pop(SITES_UPLOAD_KEY, None)
-    await update.message.reply_text(f"Loaded {len(sites)} website(s). Only enabled, allowlisted sites can be automated.", reply_markup=main_menu())
-
-
-async def export_logs(query, context: ContextTypes.DEFAULT_TYPE, user_id: int) -> None:
-    db: Database = context.application.bot_data["db"]
-    payload = await db.export_logs_for_user(user_id)
-    with tempfile.NamedTemporaryFile("w", encoding="utf-8", suffix=".json", delete=False) as handle:
-        json.dump(payload, handle, indent=2)
-        path = Path(handle.name)
-    try:
-        with path.open("rb") as document:
-            await context.bot.send_document(query.message.chat_id, document=document, filename="registration-logs.json", caption="Registration logs export")
-        await query.edit_message_text("Exported logs.", reply_markup=main_menu())
-    finally:
-        path.unlink(missing_ok=True)
-
-
-async def apply_sites_upload(update: Update, context: ContextTypes.DEFAULT_TYPE, payload: str) -> None:
-    config: AppConfig = context.application.bot_data["config"]
-    try:
-        sites = parse_sites_config_text(payload)
-    except (ConfigError, ValueError) as exc:
-        await update.message.reply_text(f"Website list was not accepted: {exc}", reply_markup=main_menu())
-        return
-    config.sites = sites
-    context.user_data.pop(SITES_UPLOAD_KEY, None)
-    await update.message.reply_text(f"Loaded {len(sites)} website(s). Only enabled, allowlisted sites can be automated.", reply_markup=main_menu())
+    await update.message.reply_text(
+        f"Loaded {len(sites)} website(s) for your account. Only enabled, allowlisted sites can be automated.",
+        reply_markup=main_menu(),
+    )
 
 
 async def export_logs(query, context: ContextTypes.DEFAULT_TYPE, user_id: int) -> None:
@@ -237,9 +214,8 @@ def profile_field_prompt(field: str) -> str:
 
 
 async def begin_registration(query, context: ContextTypes.DEFAULT_TYPE, site_key: str) -> None:
-    config: AppConfig = context.application.bot_data["config"]
     db: Database = context.application.bot_data["db"]
-    site = config.require_site(site_key)
+    site = require_site_for_user(context, query.from_user.id, site_key)
     validate_registration_batch([site], requested_concurrency=1)
     profile = await db.get_profile(query.from_user.id)
     missing = missing_required_fields(profile, [site])
@@ -252,11 +228,10 @@ async def begin_registration(query, context: ContextTypes.DEFAULT_TYPE, site_key
 
 
 async def begin_batch_registration(query, context: ContextTypes.DEFAULT_TYPE) -> None:
-    config: AppConfig = context.application.bot_data["config"]
     db: Database = context.application.bot_data["db"]
     profile = await db.get_profile(query.from_user.id)
     successful_site_keys = await db.successful_site_keys_for_user(query.from_user.id)
-    sites = [site for site in config.enabled_sites.values() if site.key not in successful_site_keys][:MAX_CONFIGURED_UNIQUE_SITES]
+    sites = [site for site in enabled_sites_for_user(context, query.from_user.id).values() if site.key not in successful_site_keys][:MAX_CONFIGURED_UNIQUE_SITES]
     if not sites:
         await query.edit_message_text("No enabled configured sites remain to register for this user.", reply_markup=main_menu())
         return
@@ -343,6 +318,31 @@ def _resolve_all_pending(context: ContextTypes.DEFAULT_TYPE, approved: bool) -> 
                 future.set_result(value)
 
 
+def uploaded_sites_by_user(context: ContextTypes.DEFAULT_TYPE) -> dict[int, dict[str, SiteConfig]]:
+    return context.application.bot_data.setdefault(USER_SITE_UPLOADS_KEY, {})
+
+
+def sites_for_user(context: ContextTypes.DEFAULT_TYPE, user_id: int) -> dict[str, SiteConfig]:
+    user_sites = uploaded_sites_by_user(context).get(user_id)
+    if user_sites is not None:
+        return user_sites
+    config: AppConfig = context.application.bot_data["config"]
+    return config.sites
+
+
+def enabled_sites_for_user(context: ContextTypes.DEFAULT_TYPE, user_id: int) -> dict[str, SiteConfig]:
+    return {key: site for key, site in sites_for_user(context, user_id).items() if site.enabled}
+
+
+def require_site_for_user(context: ContextTypes.DEFAULT_TYPE, user_id: int, key: str) -> SiteConfig:
+    site = sites_for_user(context, user_id).get(key)
+    if site is None:
+        raise ConfigError(f"Unknown site: {key}")
+    if not site.enabled:
+        raise ConfigError(f"Site is disabled: {key}")
+    return site
+
+
 def missing_required_fields(profile: UserProfile, sites: list[SiteConfig]) -> list[str]:
     required = sorted({field for site in sites for field in site.required_profile_fields})
     return [field for field in required if not getattr(profile, field, "").strip()]
@@ -389,6 +389,7 @@ def upload_sites_prompt() -> str:
     return (
         "Send or upload a sites.yaml/sites.json payload with a top-level sites list or object. "
         "Each site needs name, signup_url (or registration_url), and optional field_mappings, notes, and status. "
+        "Your upload replaces only your account's in-memory site list for this bot process. "
         "Only include sites where you are allowed to create your own account."
     )
 
