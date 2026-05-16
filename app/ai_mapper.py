@@ -1,11 +1,16 @@
 from __future__ import annotations
 
+import asyncio
 import json
+import logging
 import os
 from typing import Any
-import asyncio
 
 from app.models import PROFILE_FIELDS, FieldMetadata
+
+
+LOGGER = logging.getLogger(__name__)
+UNAUTHORIZED_FALLBACK_LOG = "AI provider unauthorized. Falling back to heuristic detection."
 
 
 class AIMapperError(ValueError):
@@ -114,11 +119,11 @@ class AIFormMapper:
         
         # Concurrent mode: kimi and qwen
         self.kimi_base_url = config.get("kimi", {}).get("base_url") or os.getenv("KIMI_BASE_URL", "https://api.moonshot.ai/v1")
-        self.kimi_api_key = config.get("kimi", {}).get("api_key") or os.getenv("KIMI_API_KEY", "")
+        self.kimi_api_key = config.get("kimi", {}).get("api_key") or os.getenv("MOONSHOT_API_KEY") or os.getenv("KIMI_API_KEY", "")
         self.kimi_model = config.get("kimi", {}).get("model") or os.getenv("KIMI_MODEL", "kimi-k2")
         
         self.qwen_base_url = config.get("qwen", {}).get("base_url") or os.getenv("QWEN_BASE_URL", "https://dashscope.aliyuncs.com/compatible-mode/v1")
-        self.qwen_api_key = config.get("qwen", {}).get("api_key") or os.getenv("QWEN_API_KEY", "")
+        self.qwen_api_key = config.get("qwen", {}).get("api_key") or os.getenv("DASHSCOPE_API_KEY") or os.getenv("QWEN_API_KEY", "")
         self.qwen_model = config.get("qwen", {}).get("model") or os.getenv("QWEN_MODEL", "qwen-plus")
         
         self.confidence_threshold = float(config.get("confidence_threshold", 0.8))
@@ -135,13 +140,24 @@ class AIFormMapper:
         """Call a single AI model and return parsed mappings."""
         import httpx
 
-        async with httpx.AsyncClient(timeout=30) as client:
-            response = await client.post(
-                base_url.rstrip("/") + "/chat/completions",
-                headers={"Authorization": f"Bearer {api_key}"},
-                json={"model": model, "messages": [{"role": "system", "content": system_prompt}, {"role": "user", "content": user_message}], "temperature": 0},
-            )
-            response.raise_for_status()
+        if not base_url or not api_key or not model:
+            LOGGER.warning(UNAUTHORIZED_FALLBACK_LOG)
+            return {}
+
+        try:
+            async with httpx.AsyncClient(timeout=30) as client:
+                response = await client.post(
+                    base_url.rstrip("/") + "/chat/completions",
+                    headers={"Authorization": f"Bearer {api_key}"},
+                    json={"model": model, "messages": [{"role": "system", "content": system_prompt}, {"role": "user", "content": user_message}], "temperature": 0},
+                )
+                response.raise_for_status()
+        except httpx.HTTPStatusError as exc:
+            if exc.response.status_code == 401:
+                LOGGER.warning(UNAUTHORIZED_FALLBACK_LOG)
+                return {}
+            raise
+
         content = response.json()["choices"][0]["message"]["content"]
         return parse_ai_mapping(content, {item["selector"] for item in payload})
 
@@ -157,36 +173,31 @@ class AIFormMapper:
         user = json.dumps({"fields": payload, "response_schema": {"mappings": {"<selector>": {"profile_field": "<field>", "confidence": 0.0}}}})
 
         if self.concurrent_mode:
-            # Concurrent mode: call both kimi and qwen
-            if not self.kimi_api_key or not self.qwen_api_key:
-                raise AIMapperError("Concurrent mode enabled but kimi_api_key or qwen_api_key is missing")
-            
-            # Call both models concurrently
-            kimi_task = self._call_ai_model(
-                self.kimi_base_url, self.kimi_api_key, self.kimi_model, payload, system, user
+            results = await asyncio.gather(
+                self._call_ai_model(self.kimi_base_url, self.kimi_api_key, self.kimi_model, payload, system, user),
+                self._call_ai_model(self.qwen_base_url, self.qwen_api_key, self.qwen_model, payload, system, user),
+                return_exceptions=True,
             )
-            qwen_task = self._call_ai_model(
-                self.qwen_base_url, self.qwen_api_key, self.qwen_model, payload, system, user
-            )
-            
-            results = await asyncio.gather(kimi_task, qwen_task, return_exceptions=True)
-            
-            # Handle any errors
+
             mappings_list = []
             for i, result in enumerate(results):
-                model_name = "Kimi" if i == 0 else "Qwen"
+                model_name = "Moonshot/Kimi" if i == 0 else "DashScope/Qwen"
                 if isinstance(result, Exception):
-                    raise AIMapperError(f"{model_name} API error: {result}")
-                mappings_list.append(result)
-            
-            # Merge results from both models
+                    LOGGER.warning("AI provider fallback after %s error: %s", model_name, result)
+                    continue
+                if result:
+                    mappings_list.append(result)
+
+            if not mappings_list:
+                LOGGER.warning("AI provider fallback. Falling back to heuristic detection.")
+                return {}
             return merge_ai_mappings(mappings_list, strategy=self.merge_strategy)
-        else:
-            # Single model mode (backward compatible)
-            if not self.base_url or not self.api_key or not self.model:
-                raise AIMapperError("AI mapping enabled but base_url, api_key, or model is missing")
-            
+
+        try:
             return await self._call_ai_model(
                 self.base_url, self.api_key, self.model, payload, system, user
             )
+        except Exception as exc:
+            LOGGER.warning("AI provider fallback. Falling back to heuristic detection: %s", exc)
+            return {}
 
