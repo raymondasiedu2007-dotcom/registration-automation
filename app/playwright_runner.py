@@ -67,6 +67,7 @@ class PlaywrightRegistrationRunner:
                 proxy = await self.proxy_rotator.next_proxy()
                 if proxy:
                     launch_options["proxy"] = proxy
+            logger.info("Browser started", extra={"site_key": site.key, "headless": self.headless})
             browser = await playwright.chromium.launch(**launch_options)
             page = await browser.new_page()
             try:
@@ -75,6 +76,7 @@ class PlaywrightRegistrationRunner:
                 await page.goto(site.registration_url, wait_until="domcontentloaded")
                 validate_allowed_url(page.url, site)
                 if await detect_captcha_or_verification(page):
+                    logger.info("CAPTCHA detected", extra={"site_key": site.key, "stage": "before_fill"})
                     manual_interventions += 1
                     screenshot = await self._screenshot(page, site.key, "manual-required")
                     await manual_callback("Manual action required. Please complete the CAPTCHA/verification in the browser, then press Continue.", screenshot)
@@ -88,6 +90,7 @@ class PlaywrightRegistrationRunner:
                 await self._fill_fields(page, fields, mappings, profile)
                 logger.info("Filled mapped registration fields", extra={"site_key": site.key, "field_count": len(mappings)})
                 if await detect_captcha_or_verification(page):
+                    logger.info("CAPTCHA detected", extra={"site_key": site.key, "stage": "after_fill"})
                     manual_interventions += 1
                     screenshot = await self._screenshot(page, site.key, "manual-required-after-fill")
                     await manual_callback("Manual action required. Please complete the CAPTCHA/verification in the browser, then press Continue.", screenshot)
@@ -99,11 +102,13 @@ class PlaywrightRegistrationRunner:
                 await asyncio.sleep(self.action_delay_seconds)
                 await self._click_submit(page, site)
                 logger.info("Submitted registration form after approval", extra={"site_key": site.key})
+                logger.info("Registration completed", extra={"site_key": site.key})
                 return {"status": "success", "manual_interventions": manual_interventions, "screenshot": final_screenshot}
             except Exception as exc:
                 screenshot = await self._screenshot(page, site.key, "error")
                 if isinstance(exc, SafetyError):
                     raise
+                logger.info("Registration failed", extra={"site_key": site.key, "failure_reason": str(exc)})
                 return {"status": "failed", "manual_interventions": manual_interventions, "failure_reason": str(exc), "screenshot": screenshot}
             finally:
                 await browser.close()

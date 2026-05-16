@@ -10,7 +10,7 @@ from pathlib import Path
 
 from dotenv import load_dotenv
 from telegram import Update
-from telegram.error import Conflict
+from telegram.error import BadRequest, Conflict
 from telegram.ext import Application, CallbackQueryHandler, CommandHandler, ContextTypes, MessageHandler, filters
 
 from app.ai_mapper import AIFormMapper
@@ -18,7 +18,27 @@ from app.analytics import AnalyticsService, format_analytics
 from app.config import AppConfig, ConfigError, load_config, parse_sites_config_text
 from app.database import Database
 from app.logging_config import configure_logging
-from app.menu import approval_menu, continue_menu, edit_profile_menu, main_menu, sites_menu
+from app.menu import (
+    CALLBACK_ANALYTICS,
+    CALLBACK_BACK,
+    CALLBACK_CANCEL,
+    CALLBACK_DELETE_SITE,
+    CALLBACK_HELP,
+    CALLBACK_MAIN,
+    CALLBACK_PAUSE,
+    CALLBACK_REGISTER,
+    CALLBACK_REGISTER_ALL,
+    CALLBACK_RESUME,
+    CALLBACK_SETTINGS,
+    CALLBACK_SITES,
+    CALLBACK_UPLOAD_SITES,
+    approval_menu,
+    continue_menu,
+    delete_sites_menu,
+    edit_profile_menu,
+    main_menu,
+    sites_menu,
+)
 from app.models import AttemptStatus, OPTIONAL_PROFILE_FIELDS, PROFILE_FIELDS, SiteConfig, UserProfile
 from app.playwright_runner import PlaywrightRegistrationRunner
 from app.proxy import ProxyRotator
@@ -31,6 +51,21 @@ FIELD_LABELS = {
 }
 
 
+async def safe_edit_or_reply(query, text, reply_markup=None):
+    try:
+        await query.edit_message_text(
+            text=text,
+            reply_markup=reply_markup,
+        )
+    except BadRequest as e:
+        if "There is no text in the message to edit" in str(e):
+            await query.message.reply_text(
+                text=text,
+                reply_markup=reply_markup,
+            )
+        else:
+            raise
+
 
 def field_label(field: str) -> str:
     suffix = " (optional)" if field in OPTIONAL_PROFILE_FIELDS else ""
@@ -40,6 +75,8 @@ def field_label(field: str) -> str:
 PROFILE_EDIT_QUEUE_KEY = "profile_edit_queue"
 EDITING_FIELD_KEY = "editing_field"
 SITES_UPLOAD_KEY = "awaiting_sites_upload"
+PROCESSED_CALLBACK_IDS_KEY = "processed_callback_ids"
+TASKS_PAUSED_KEY = "tasks_paused"
 LOGGER = logging.getLogger(__name__)
 DEFAULT_LOCK_FILE = "/tmp/registration-automation-bot.lock"
 
@@ -100,61 +137,92 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
 
 async def on_menu(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     query = update.callback_query
+    if not query:
+        return
     await query.answer()
+
+    processed = context.user_data.setdefault(PROCESSED_CALLBACK_IDS_KEY, set())
+    if query.id in processed:
+        LOGGER.info("Duplicate Telegram callback ignored", extra={"callback_id": query.id})
+        return
+    processed.add(query.id)
+    if len(processed) > 200:
+        processed.clear()
+        processed.add(query.id)
+
     config: AppConfig = context.application.bot_data["config"]
     db: Database = context.application.bot_data["db"]
     analytics: AnalyticsService = context.application.bot_data["analytics"]
     user_id = query.from_user.id
-    data = query.data or "main"
+    data = query.data or CALLBACK_MAIN
+    LOGGER.info("Menu clicked", extra={"user_id": user_id, "callback_data": data})
 
-    if data == "main":
-        await query.edit_message_text("Main Menu", reply_markup=main_menu())
-    elif data == "register":
-        await query.edit_message_text("Select a configured site:", reply_markup=sites_menu(config.sites))
-    elif data == "register_all":
+    if data in {CALLBACK_MAIN, CALLBACK_BACK}:
+        await safe_edit_or_reply(query, "Main Menu", reply_markup=main_menu())
+    elif data == CALLBACK_REGISTER:
+        await safe_edit_or_reply(query, "Select a configured site:", reply_markup=sites_menu(config.sites))
+    elif data == CALLBACK_REGISTER_ALL:
         await begin_batch_registration(query, context)
     elif data.startswith("site:"):
         await begin_registration(query, context, data.split(":", 1)[1])
     elif data == "info":
         profile = await db.get_profile(user_id)
-        await query.edit_message_text(format_profile(profile), reply_markup=main_menu())
+        await safe_edit_or_reply(query, format_profile(profile), reply_markup=main_menu())
     elif data == "edit":
         await start_profile_edit_sequence(query, context)
     elif data.startswith("edit:"):
         field = data.split(":", 1)[1]
         if field not in PROFILE_FIELDS:
-            await query.edit_message_text("Unknown field.", reply_markup=main_menu())
+            await safe_edit_or_reply(query, "Unknown field.", reply_markup=main_menu())
             return
         context.user_data[PROFILE_EDIT_QUEUE_KEY] = remaining_profile_fields_after(field)
         context.user_data[EDITING_FIELD_KEY] = field
-        await query.edit_message_text(profile_field_prompt(field))
-    elif data == "sites":
-        await query.edit_message_text(format_sites(config.sites), reply_markup=main_menu())
-    elif data == "upload_sites":
+        await safe_edit_or_reply(query, profile_field_prompt(field))
+    elif data == CALLBACK_SITES:
+        await safe_edit_or_reply(query, format_sites(config.sites), reply_markup=main_menu())
+    elif data == CALLBACK_UPLOAD_SITES:
         context.user_data[SITES_UPLOAD_KEY] = True
-        await query.edit_message_text(upload_sites_prompt())
+        await safe_edit_or_reply(query, upload_sites_prompt(), reply_markup=main_menu())
+    elif data == CALLBACK_DELETE_SITE:
+        await safe_edit_or_reply(query, "Choose a saved site to delete:", reply_markup=delete_sites_menu(config.sites))
+    elif data.startswith("delete_site:"):
+        site_key = data.split(":", 1)[1]
+        site = config.sites.pop(site_key, None)
+        message = f"Deleted site: {site.name}." if site else "Site was not found."
+        await safe_edit_or_reply(query, message, reply_markup=main_menu())
     elif data == "status":
-        await query.edit_message_text(format_registration_status(await db.recent_attempts_for_user(user_id)), reply_markup=main_menu())
-    elif data == "analytics":
-        await query.edit_message_text(format_analytics(await analytics.summary()), reply_markup=main_menu())
+        await safe_edit_or_reply(query, format_registration_status(await db.recent_attempts_for_user(user_id)), reply_markup=main_menu())
+    elif data == CALLBACK_ANALYTICS:
+        await safe_edit_or_reply(query, format_analytics(await analytics.summary()), reply_markup=main_menu())
     elif data == "export_logs":
         await export_logs(query, context, user_id)
-    elif data == "settings":
-        await query.edit_message_text("Settings: AI mapping and site allowlists are managed in config.yaml.", reply_markup=main_menu())
-    elif data == "help":
-        await query.edit_message_text(help_text(), reply_markup=main_menu())
-    elif data == "cancel":
+    elif data == CALLBACK_SETTINGS:
+        await safe_edit_or_reply(query, settings_text(context), reply_markup=main_menu())
+    elif data == CALLBACK_HELP:
+        await safe_edit_or_reply(query, help_text(), reply_markup=main_menu())
+    elif data == CALLBACK_PAUSE:
+        context.user_data[TASKS_PAUSED_KEY] = True
+        await safe_edit_or_reply(query, "New registration tasks are paused. Use Resume Tasks to start new tasks again.", reply_markup=main_menu())
+    elif data == CALLBACK_RESUME:
+        context.user_data[TASKS_PAUSED_KEY] = False
+        await safe_edit_or_reply(query, "Registration tasks resumed.", reply_markup=main_menu())
+    elif data == CALLBACK_CANCEL:
         _resolve_all_pending(context, approved=False)
-        context.user_data.clear()
-        await query.edit_message_text("Current task cancelled.", reply_markup=main_menu())
+        context.user_data.pop(PROFILE_EDIT_QUEUE_KEY, None)
+        context.user_data.pop(EDITING_FIELD_KEY, None)
+        context.user_data.pop(SITES_UPLOAD_KEY, None)
+        context.user_data[TASKS_PAUSED_KEY] = True
+        await safe_edit_or_reply(query, "Current task cancelled and new tasks paused.", reply_markup=main_menu())
     elif data.startswith("approve_submit"):
         token = _callback_token(data)
         _resolve_future(context, "approval_futures", token, True)
-        await query.edit_message_text("Submission approved. Continuing automation...")
+        await safe_edit_or_reply(query, "Submission approved. Continuing automation...", reply_markup=main_menu())
     elif data.startswith("manual_continue"):
         token = _callback_token(data)
         _resolve_future(context, "manual_futures", token, True)
-        await query.edit_message_text("Continuing after manual action...")
+        await safe_edit_or_reply(query, "Continuing after manual action...", reply_markup=main_menu())
+    else:
+        await safe_edit_or_reply(query, "Unknown menu action. Returning to the main menu.", reply_markup=main_menu())
 
 
 async def on_document(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
@@ -227,33 +295,7 @@ async def export_logs(query, context: ContextTypes.DEFAULT_TYPE, user_id: int) -
     try:
         with path.open("rb") as document:
             await context.bot.send_document(query.message.chat_id, document=document, filename="registration-logs.json", caption="Registration logs export")
-        await query.edit_message_text("Exported logs.", reply_markup=main_menu())
-    finally:
-        path.unlink(missing_ok=True)
-
-
-async def apply_sites_upload(update: Update, context: ContextTypes.DEFAULT_TYPE, payload: str) -> None:
-    config: AppConfig = context.application.bot_data["config"]
-    try:
-        sites = parse_sites_config_text(payload)
-    except (ConfigError, ValueError) as exc:
-        await update.message.reply_text(f"Website list was not accepted: {exc}", reply_markup=main_menu())
-        return
-    config.sites = sites
-    context.user_data.pop(SITES_UPLOAD_KEY, None)
-    await update.message.reply_text(f"Loaded {len(sites)} website(s). Only enabled, allowlisted sites can be automated.", reply_markup=main_menu())
-
-
-async def export_logs(query, context: ContextTypes.DEFAULT_TYPE, user_id: int) -> None:
-    db: Database = context.application.bot_data["db"]
-    payload = await db.export_logs_for_user(user_id)
-    with tempfile.NamedTemporaryFile("w", encoding="utf-8", suffix=".json", delete=False) as handle:
-        json.dump(payload, handle, indent=2)
-        path = Path(handle.name)
-    try:
-        with path.open("rb") as document:
-            await context.bot.send_document(query.message.chat_id, document=document, filename="registration-logs.json", caption="Registration logs export")
-        await query.edit_message_text("Exported logs.", reply_markup=main_menu())
+        await safe_edit_or_reply(query, "Exported logs.", reply_markup=main_menu())
     finally:
         path.unlink(missing_ok=True)
 
@@ -261,7 +303,7 @@ async def export_logs(query, context: ContextTypes.DEFAULT_TYPE, user_id: int) -
 async def start_profile_edit_sequence(query, context: ContextTypes.DEFAULT_TYPE) -> None:
     context.user_data[PROFILE_EDIT_QUEUE_KEY] = list(PROFILE_FIELDS[1:])
     context.user_data[EDITING_FIELD_KEY] = PROFILE_FIELDS[0]
-    await query.edit_message_text("Let's update your saved info one field at a time.\n\n" + profile_field_prompt(PROFILE_FIELDS[0]))
+    await safe_edit_or_reply(query, "Let's update your saved info one field at a time.\n\n" + profile_field_prompt(PROFILE_FIELDS[0]))
 
 
 def remaining_profile_fields_after(field: str) -> list[str]:
@@ -292,36 +334,44 @@ def profile_field_prompt(field: str) -> str:
 
 
 async def begin_registration(query, context: ContextTypes.DEFAULT_TYPE, site_key: str) -> None:
+    if context.user_data.get(TASKS_PAUSED_KEY):
+        await safe_edit_or_reply(query, "Registration tasks are paused. Use Resume Tasks before starting a new registration.", reply_markup=main_menu())
+        return
     config: AppConfig = context.application.bot_data["config"]
     db: Database = context.application.bot_data["db"]
     site = config.require_site(site_key)
+    LOGGER.info("Registration started", extra={"user_id": query.from_user.id, "site_key": site.key})
     validate_registration_batch([site], requested_concurrency=1)
     profile = await db.get_profile(query.from_user.id)
     missing = missing_required_fields(profile, [site])
     if missing:
-        await query.edit_message_text("Missing required profile fields: " + ", ".join(field_label(f) for f in missing), reply_markup=edit_profile_menu())
+        await safe_edit_or_reply(query, "Missing required profile fields: " + ", ".join(field_label(f) for f in missing), reply_markup=edit_profile_menu())
         return
-    await query.edit_message_text(f"Starting authorized registration helper for {site.name}. Final submit requires your approval.")
+    await safe_edit_or_reply(query, f"Starting authorized registration helper for {site.name}. Final submit requires your approval.")
     result = await run_site_registration(query, context, site, profile)
     await context.bot.send_message(query.message.chat_id, format_site_result(site, result), reply_markup=main_menu())
 
 
 async def begin_batch_registration(query, context: ContextTypes.DEFAULT_TYPE) -> None:
+    if context.user_data.get(TASKS_PAUSED_KEY):
+        await safe_edit_or_reply(query, "Registration tasks are paused. Use Resume Tasks before starting a new registration.", reply_markup=main_menu())
+        return
     config: AppConfig = context.application.bot_data["config"]
     db: Database = context.application.bot_data["db"]
+    LOGGER.info("Registration started", extra={"user_id": query.from_user.id, "mode": "batch"})
     profile = await db.get_profile(query.from_user.id)
     successful_site_keys = await db.successful_site_keys_for_user(query.from_user.id)
     sites = [site for site in config.enabled_sites.values() if site.key not in successful_site_keys][:MAX_CONFIGURED_UNIQUE_SITES]
     if not sites:
-        await query.edit_message_text("No enabled configured sites remain to register for this user.", reply_markup=main_menu())
+        await safe_edit_or_reply(query, "No enabled configured sites remain to register for this user.", reply_markup=main_menu())
         return
     concurrency = min(MAX_CONCURRENT_REGISTRATIONS, len(sites))
     validate_registration_batch(sites, requested_concurrency=concurrency)
     missing = missing_required_fields(profile, sites)
     if missing:
-        await query.edit_message_text("Missing required profile fields: " + ", ".join(field_label(f) for f in missing), reply_markup=edit_profile_menu())
+        await safe_edit_or_reply(query, "Missing required profile fields: " + ", ".join(field_label(f) for f in missing), reply_markup=edit_profile_menu())
         return
-    await query.edit_message_text(
+    await safe_edit_or_reply(query,
         f"Starting registrations for {len(sites)} unique configured site(s), up to {concurrency} at a time. "
         "Each site still requires final approval before submit."
     )
@@ -445,6 +495,15 @@ def upload_sites_prompt() -> str:
         "Send or upload a sites.yaml/sites.json payload with a top-level sites list or object. "
         "Each site needs name, signup_url (or registration_url), and optional field_mappings, notes, and status. "
         "Only include sites where you are allowed to create your own account."
+    )
+
+
+def settings_text(context: ContextTypes.DEFAULT_TYPE) -> str:
+    paused = "paused" if context.user_data.get(TASKS_PAUSED_KEY) else "active"
+    return (
+        f"Settings\nTask state: {paused}\n"
+        "AI mapping and site allowlists are managed in config.yaml and .env. "
+        "Use DASHSCOPE_API_KEY and MOONSHOT_API_KEY for Qwen and Moonshot providers."
     )
 
 
